@@ -7,7 +7,7 @@
 #define NUM_THREADS 4
 #define NUM_ITERATIONS 5
 #define PERIOD_MS 900000000
-#define EXECUTION_TIME_MS 400000000ULL
+#define EXECUTION_TIME_MS 370000000ULL
 #define Ciclo 0.5
 
 // function to get the current time
@@ -37,16 +37,16 @@ void* periodic_thread(void* thread_id) {
         cost = end_time - start_time;
 
         // Coheck if the cost is greater than the period
-        if (cost > Ciclo) {
+        if (cost > 0.9) {
             printf("[%f] Thread %d - Iteration %d: Cost=%f s. (fallo temporal)\n",
                    start_time, tid, i, cost);
         } else {
             printf("[%f] Thread %d - Iteration %d: Cost=%f s.\n",
                    start_time, tid, i, cost);
+            sleep((double)PERIOD_MS / 1e9 - cost);
         }
 
         // Wait the remaining time to complete the period
-        sleep((double)PERIOD_MS / 1e9 - cost);
     }
 
     pthread_exit(NULL);
