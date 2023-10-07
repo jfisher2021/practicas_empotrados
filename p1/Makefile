@@ -1,5 +1,3 @@
-#crete make file for practica1
-
 (CC) = gcc
 
 (CFLAGS) = -Wall -g
