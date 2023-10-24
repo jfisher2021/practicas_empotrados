@@ -1,28 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <string.h>
+#define _GNU_SOURCE
 #include <errno.h>
-#include <sched.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <sched.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
-#define NUM_THREADS 8
 #define NUM_ITERATIONS 10000
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
+#define MAX_THREADS 128  // Asume un máximo de 128 núcleos
 
 static int32_t latency_target_value = 0;
 static int32_t latency_target_fd = -1;
-static uint64_t latency_sum[NUM_THREADS] = {0};
-static uint64_t latency_max[NUM_THREADS] = {0};
+static uint64_t latency_sum[MAX_THREADS] = {0};
+static uint64_t latency_max[MAX_THREADS] = {0};
 
+// Resto del código...
 void *thread_func(void *arg) {
     int cpu = *(int *)arg;
     cpu_set_t cpuset;
@@ -47,6 +45,7 @@ void *thread_func(void *arg) {
         exit(EXIT_FAILURE);
     }
 
+    FILE *csv = fopen(CSV_FILE, "w");
     for (int i = 0; i < NUM_ITERATIONS; i++) {
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -57,20 +56,20 @@ void *thread_func(void *arg) {
         if (latency > latency_max[cpu]) {
             latency_max[cpu] = latency;
         }
-        FILE *csv = fopen(CSV_FILE, "a");
         if (csv == NULL) {
             fprintf(stderr, "Error opening CSV file: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         fprintf(csv, "%d,%d,%lu\n", cpu, i, latency);
-        fclose(csv);
     }
+        fclose(csv);
 
     return NULL;
 }
 
 int main() {
     int ret;
+    int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN);  // Mover esta línea aquí
     pthread_t threads[NUM_THREADS];
     int cpu_list[NUM_THREADS];
     uint64_t total_latency_sum = 0;
