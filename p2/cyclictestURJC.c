@@ -10,19 +10,30 @@
 #include <time.h>
 #include <unistd.h>
 
-#define NUM_ITERATIONS 10000
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define MAX_THREADS 128  // Asume un máximo de 128 núcleos
+
+int NUM_THREADS;
+int *num_iterations;
+uint64_t *latency_sum;
+uint64_t *latency_max;
 
 static int32_t latency_target_value = 0;
 static int32_t latency_target_fd = -1;
-static uint64_t latency_sum[MAX_THREADS] = {0};
-static uint64_t latency_max[MAX_THREADS] = {0};
 
-// Resto del código...
+double get_time() {
+    /* variable to store the current time
+    it returns a structure of time divided into seconds and nanoseconds */
+    struct timespec t;
+    // clock_gettime() returns the current time of the clock CLOCK_REALTIME
+    clock_gettime(CLOCK_REALTIME, &t);
+
+    return (double)t.tv_sec + t.tv_nsec / 1e9;
+}
+
 void *thread_func(void *arg) {
     int cpu = *(int *)arg;
+    double start_time = get_time(), current_time;
     cpu_set_t cpuset;
     pthread_t thread = pthread_self();
     struct sched_param param;
@@ -46,7 +57,9 @@ void *thread_func(void *arg) {
     }
 
     FILE *csv = fopen(CSV_FILE, "w");
-    for (int i = 0; i < NUM_ITERATIONS; i++) {
+    start_time = get_time();                     // Obtener el tiempo al inicio
+    while ((current_time - start_time) < 60.0) {  // Comprobar si han pasado 60 segundos
+        num_iterations[cpu]++;
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
         usleep(1000);
@@ -60,21 +73,26 @@ void *thread_func(void *arg) {
             fprintf(stderr, "Error opening CSV file: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
-        fprintf(csv, "%d,%d,%lu\n", cpu, i, latency);
+        fprintf(csv, "%d,%d,%lu\n", cpu, num_iterations[cpu], latency);
+
+        current_time = get_time();  // Actualizar el tiempo actual
     }
-        fclose(csv);
+
+    fclose(csv);
 
     return NULL;
 }
-
 int main() {
-    int ret;
-    int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN);  // Mover esta línea aquí
+    int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN);  // Obtener el número de núcleos
     pthread_t threads[NUM_THREADS];
-    int cpu_list[NUM_THREADS];
+    int cpu_list[NUM_THREADS], ret, total_num_iterations = 0;
     uint64_t total_latency_sum = 0;
     uint64_t total_latency_max = 0;
-
+    NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
+    num_iterations = (int *)calloc(NUM_THREADS, sizeof(int));
+    latency_sum = (uint64_t *)calloc(NUM_THREADS, sizeof(uint64_t));
+    latency_max = (uint64_t *)calloc(NUM_THREADS, sizeof(uint64_t));
+    // Inicializar num_iterations como un array
     latency_target_fd = open(CPU_LATENCY_FILE, O_RDWR);
     if (latency_target_fd < 0) {
         fprintf(stderr, "Error opening CPU latency file: %s\n", strerror(errno));
@@ -102,22 +120,22 @@ int main() {
             exit(EXIT_FAILURE);
         }
         total_latency_sum += latency_sum[i];
+        total_num_iterations += num_iterations[i];
+
         if (latency_max[i] > total_latency_max) {
             total_latency_max = latency_max[i];
         }
     }
 
-    printf("[0] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[0] / NUM_ITERATIONS, latency_max[0]);
-    printf("[1] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[1] / NUM_ITERATIONS, latency_max[1]);
-    printf("[2] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[2] / NUM_ITERATIONS, latency_max[2]);
-    printf("[3] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[3] / NUM_ITERATIONS, latency_max[3]);
-    printf("[4] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[4] / NUM_ITERATIONS, latency_max[4]);
-    printf("[5] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[5] / NUM_ITERATIONS, latency_max[5]);
-    printf("[6] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[6] / NUM_ITERATIONS, latency_max[6]);
-    printf("[7] latencia media = %09lu ns. | max = %09lu ns\n", latency_sum[7] / NUM_ITERATIONS, latency_max[7]);
-    printf("Total latencia media = %09lu ns. | max = %09lu ns\n", total_latency_sum / (NUM_THREADS * NUM_ITERATIONS), total_latency_max);
+    for (int i = 0; i < NUM_THREADS; i++) {
+        printf("[%d] latencia media = %09lu ns. | max = %09lu ns | num_iterations[] == %d \n", i, latency_sum[i] / num_iterations[i], latency_max[i], num_iterations[i]);
+    }
+    printf("Total latencia media = %09lu ns. | max = %09lu ns, total_num_iterations= %d \n", total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
 
     close(latency_target_fd);
+    free(num_iterations);
+    free(latency_sum);
+    free(latency_max);
 
     return 0;
 }
