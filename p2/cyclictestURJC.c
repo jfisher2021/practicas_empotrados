@@ -57,12 +57,12 @@ void *thread_func(void *arg) {
     }
 
     FILE *csv = fopen(CSV_FILE, "w");
-    start_time = get_time();                     // Obtener el tiempo al inicio
+    start_time = get_time();                      // Obtener el tiempo al inicio
     while ((current_time - start_time) < 60.0) {  // Comprobar si han pasado 60 segundos
         num_iterations[cpu]++;
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
-	usleep(1000);
+        usleep(1000);
         clock_gettime(CLOCK_MONOTONIC, &end);
         latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
         latency_sum[cpu] += latency;
@@ -98,7 +98,7 @@ int main() {
         fprintf(stderr, "Error opening CPU latency file: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
-    ret = write(latency_target_fd, &latency_target_value, sizeof(latency_target_value));
+    ret = write(latency_target_fd, &latency_target_value, 4);
     if (ret < 0) {
         fprintf(stderr, "Error setting CPU latency: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
