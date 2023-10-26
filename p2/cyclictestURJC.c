@@ -48,6 +48,7 @@ void *thread_func(void *arg) {
     struct sched_param param;
     uint64_t latency;
     int ret;
+
     CPU_ZERO(&cpuset);
     CPU_SET(cpu, &cpuset);
 
@@ -84,25 +85,25 @@ void *thread_func(void *arg) {
         exit(EXIT_FAILURE);
     }
 
-    start_time = get_time();                      // Obtener el tiempo al inicio
-    while ((current_time - start_time) < TIME) {  // Comprobar si han pasado 60 segundos
-        num_iterations[cpu]++;
+    start_time = get_time();  // Obtener el tiempo al inicio
+                              // while ((current_time - start_time) < TIME) {  // Comprobar si han pasado 60 segundos
+    num_iterations[cpu]++;
 
-        struct timespec start, end;
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        usleep(10000);  // 10 ms
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
-        latency_sum[cpu] += latency;
-        if (latency > latency_max[cpu]) {
-            latency_max[cpu] = latency;
-        }
-
-        current_time = get_time();  // Actualizar el tiempo actual
-        my_struct->num_iterations_array[num_iterations[cpu]] = num_iterations[cpu];
-        my_struct->cpu_array[num_iterations[cpu]] = cpu;
-        my_struct->latency_array[num_iterations[cpu]] = latency;
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    usleep(10000);  // 10 ms
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
+    latency_sum[cpu] += latency;
+    if (latency > latency_max[cpu]) {
+        latency_max[cpu] = latency;
     }
+
+    current_time = get_time();  // Actualizar el tiempo actual
+    my_struct->num_iterations_array[num_iterations[cpu]] = num_iterations[cpu];
+    my_struct->cpu_array[num_iterations[cpu]] = cpu;
+    my_struct->latency_array[num_iterations[cpu]] = latency;
+    // }
 
     pthread_exit((void *)my_struct);
 }
