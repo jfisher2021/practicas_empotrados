@@ -12,7 +12,7 @@
 
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define TIME 60
+#define TIME 2
 
 int *num_iterations;
 uint64_t *latency_sum;
@@ -40,6 +40,16 @@ double get_time() {
 void *thread_func(void *arg) {
     int cpu = *(int *)arg;
     struct ficheros *my_struct = (struct ficheros *)malloc(sizeof(struct ficheros));
+    memset(my_struct, 0, sizeof(struct ficheros));
+    double start_time = get_time();
+    double current_time;
+    cpu_set_t cpuset;
+    pthread_t thread = pthread_self();
+    struct sched_param param;
+    uint64_t latency;
+    int ret;
+    CPU_ZERO(&cpuset);
+    CPU_SET(cpu, &cpuset);
 
     if (my_struct == NULL) {
         fprintf(stderr, "Error allocating memory for my_struct\n");
@@ -47,24 +57,17 @@ void *thread_func(void *arg) {
     }
 
     my_struct->cpu_array = (int *)malloc(6000 * sizeof(int));
+    memset(my_struct->cpu_array, 0, 6000 * sizeof(int));
     my_struct->num_iterations_array = (int *)malloc(6000 * sizeof(int));
+    memset(my_struct->num_iterations_array, 0, 6000 * sizeof(int));
     my_struct->latency_array = (uint64_t *)malloc(6000 * sizeof(uint64_t));
+    memset(my_struct->latency_array, 0, 6000 * sizeof(uint64_t));
 
     if (my_struct->cpu_array == NULL || my_struct->num_iterations_array == NULL || my_struct->latency_array == NULL) {
         fprintf(stderr, "Error allocating memory for arrays in my_struct\n");
         free(my_struct);
         exit(EXIT_FAILURE);
     }
-
-    double start_time = get_time(), current_time;
-    cpu_set_t cpuset;
-    pthread_t thread = pthread_self();
-    struct sched_param param;
-    uint64_t latency;
-    int ret;
-
-    CPU_ZERO(&cpuset);
-    CPU_SET(cpu, &cpuset);
 
     ret = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
     if (ret != 0) {
@@ -107,13 +110,16 @@ void *thread_func(void *arg) {
 int main() {
     int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN);  // Obtener el número de núcleos
     pthread_t threads[NUM_THREADS];
-    int cpu_list[NUM_THREADS], ret, total_num_iterations = 0;
+    int cpu_list[NUM_THREADS], ret = 0, total_num_iterations = 0;
     uint64_t total_latency_sum = 0;
     uint64_t total_latency_max = 0;
     NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
     num_iterations = (int *)malloc(NUM_THREADS * sizeof(int));
+    memset(num_iterations, 0, NUM_THREADS * sizeof(int));
     latency_sum = (uint64_t *)malloc(NUM_THREADS * sizeof(uint64_t));
+    memset(latency_sum, 0, NUM_THREADS * sizeof(uint64_t));
     latency_max = (uint64_t *)malloc(NUM_THREADS * sizeof(uint64_t));
+    memset(latency_max, 0, NUM_THREADS * sizeof(uint64_t));
     struct ficheros *my_structs[NUM_THREADS];
 
     if (num_iterations == NULL || latency_sum == NULL || latency_max == NULL) {
