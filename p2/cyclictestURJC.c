@@ -73,10 +73,9 @@ void *thread_func(void *arg)
         num_iterations[cpu]++;
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
-
-        usleep(1000);
+        usleep(10000); //10 ms
         clock_gettime(CLOCK_MONOTONIC, &end);
-        latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 1000000;
+        latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
         latency_sum[cpu] += latency;
         if (latency > latency_max[cpu])
         {
