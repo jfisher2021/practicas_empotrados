@@ -1,6 +1,6 @@
 CC = gcc
 
-(CFLAGS) = -I. -Wall -g -lpthread
+(CFLAGS) = -I. -Wall -g -lpthread -Wall -Wextra -Werror -pedantic -std=c99
 
 all: cyclictestURJC
 

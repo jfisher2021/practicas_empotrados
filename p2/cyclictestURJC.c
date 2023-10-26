@@ -12,7 +12,7 @@
 
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define TIME 5
+#define TIME 60
 
 int *num_iterations;
 uint64_t *latency_sum;
@@ -21,15 +21,13 @@ uint64_t *latency_max;
 static int32_t latency_target_value = 0;
 static int32_t latency_target_fd = -1;
 
-struct ficheros
-{
+struct ficheros {
     int *cpu_array;
-    int *num_iterations_aray;
-    uint64_t *latency;
+    int *num_iterations_array;
+    uint64_t *latency_array;
 };
 
-double get_time()
-{
+double get_time() {
     /* variable to store the current time
     it returns a structure of time divided into seconds and nanoseconds */
     struct timespec t;
@@ -39,23 +37,20 @@ double get_time()
     return (double)t.tv_sec + t.tv_nsec / 1e9;
 }
 
-void *thread_func(void *arg)
-{
+void *thread_func(void *arg) {
     int cpu = *(int *)arg;
     struct ficheros *my_struct = (struct ficheros *)malloc(sizeof(struct ficheros));
-    
-    if (my_struct == NULL)
-    {
+
+    if (my_struct == NULL) {
         fprintf(stderr, "Error allocating memory for my_struct\n");
         exit(EXIT_FAILURE);
     }
 
-    my_struct->cpu_array = (int *)malloc(60000 * sizeof(int));
-    my_struct->num_iterations_aray = (int *)malloc(60000 * sizeof(int));
-    my_struct->latency = (uint64_t *)malloc(60000 * sizeof(uint64_t));
+    my_struct->cpu_array = (int *)malloc(6000 * sizeof(int));
+    my_struct->num_iterations_array = (int *)malloc(6000 * sizeof(int));
+    my_struct->latency_array = (uint64_t *)malloc(6000 * sizeof(uint64_t));
 
-    if (my_struct->cpu_array == NULL || my_struct->num_iterations_aray == NULL || my_struct->latency == NULL)
-    {
+    if (my_struct->cpu_array == NULL || my_struct->num_iterations_array == NULL || my_struct->latency_array == NULL) {
         fprintf(stderr, "Error allocating memory for arrays in my_struct\n");
         free(my_struct);
         exit(EXIT_FAILURE);
@@ -72,8 +67,7 @@ void *thread_func(void *arg)
     CPU_SET(cpu, &cpuset);
 
     ret = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
-    if (ret != 0)
-    {
+    if (ret != 0) {
         fprintf(stderr, "Error setting thread affinity: %s\n", strerror(errno));
         free(my_struct);
         exit(EXIT_FAILURE);
@@ -81,40 +75,37 @@ void *thread_func(void *arg)
 
     param.sched_priority = 99;
     ret = pthread_setschedparam(thread, SCHED_FIFO, &param);
-    if (ret != 0)
-    {
+    if (ret != 0) {
         fprintf(stderr, "Error setting thread priority: %s\n", strerror(errno));
         free(my_struct);
         exit(EXIT_FAILURE);
     }
 
-    start_time = get_time(); // Obtener el tiempo al inicio
-    while ((current_time - start_time) < TIME)
-    { // Comprobar si han pasado 60 segundos
+    start_time = get_time();                      // Obtener el tiempo al inicio
+    while ((current_time - start_time) < TIME) {  // Comprobar si han pasado 60 segundos
         num_iterations[cpu]++;
-        my_struct->num_iterations_aray[num_iterations[cpu]] = num_iterations[cpu];
-        my_struct->cpu_array[num_iterations[cpu]] = cpu;
-        
+
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
-        usleep(10000); // 10 ms
+        usleep(10000);  // 10 ms
         clock_gettime(CLOCK_MONOTONIC, &end);
         latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
         latency_sum[cpu] += latency;
-        if (latency > latency_max[cpu])
-        {
+        if (latency > latency_max[cpu]) {
             latency_max[cpu] = latency;
         }
 
-        current_time = get_time(); // Actualizar el tiempo actual
+        current_time = get_time();  // Actualizar el tiempo actual
+        my_struct->num_iterations_array[num_iterations[cpu]] = num_iterations[cpu];
+        my_struct->cpu_array[num_iterations[cpu]] = cpu;
+        my_struct->latency_array[num_iterations[cpu]] = latency;
     }
 
     pthread_exit((void *)my_struct);
 }
 
-int main()
-{
-    int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN); // Obtener el número de núcleos
+int main() {
+    int NUM_THREADS = (int)sysconf(_SC_NPROCESSORS_ONLN);  // Obtener el número de núcleos
     pthread_t threads[NUM_THREADS];
     int cpu_list[NUM_THREADS], ret, total_num_iterations = 0;
     uint64_t total_latency_sum = 0;
@@ -123,76 +114,65 @@ int main()
     num_iterations = (int *)malloc(NUM_THREADS * sizeof(int));
     latency_sum = (uint64_t *)malloc(NUM_THREADS * sizeof(uint64_t));
     latency_max = (uint64_t *)malloc(NUM_THREADS * sizeof(uint64_t));
-    struct ficheros *my_struct[NUM_THREADS];
+    struct ficheros *my_structs[NUM_THREADS];
 
-    if (num_iterations == NULL || latency_sum == NULL || latency_max == NULL)
-    {
+    if (num_iterations == NULL || latency_sum == NULL || latency_max == NULL) {
         fprintf(stderr, "Memory allocation error\n");
         exit(EXIT_FAILURE);
     }
     // Inicializar num_iterations como un array
     latency_target_fd = open(CPU_LATENCY_FILE, O_RDWR);
-    if (latency_target_fd < 0)
-    {
+    if (latency_target_fd < 0) {
         fprintf(stderr, "Error opening CPU latency file: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
     ret = write(latency_target_fd, &latency_target_value, sizeof(latency_target_value));
-    if (ret < 0)
-    {
+    if (ret < 0) {
         fprintf(stderr, "Error setting CPU latency: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
+    for (int i = 0; i < NUM_THREADS; i++) {
         cpu_list[i] = i;
         ret = pthread_create(&threads[i], NULL, thread_func, &cpu_list[i]);
-        if (ret != 0)
-        {
+        if (ret != 0) {
             fprintf(stderr, "Error creating thread: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
     }
+    FILE *csv = fopen(CSV_FILE, "w");
+    if (csv == NULL) {
+        fprintf(stderr, "Error opening file\n");
+        return 1;
+    }
 
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        ret = pthread_join(threads[i], (void **)&my_struct);
-        if (ret != 0)
-        {
+    for (int i = 0; i < NUM_THREADS; i++) {
+        ret = pthread_join(threads[i], (void **)&my_structs[i]);
+        if (ret != 0) {
             fprintf(stderr, "Error joining thread: %s\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
         total_latency_sum += latency_sum[i];
         total_num_iterations += num_iterations[i];
 
-        if (latency_max[i] > total_latency_max)
-        {
+        if (latency_max[i] > total_latency_max) {
             total_latency_max = latency_max[i];
         }
+        for (int j = 0; j < 6000; j++) {
+            fprintf(csv, "%d,%d,%lu\n", my_structs[i]->cpu_array[j], my_structs[i]->num_iterations_array[j], my_structs[i]->latency_array[j]);
+        }
+
+        free(my_structs[i]->cpu_array);
+        free(my_structs[i]->num_iterations_array);
+        free(my_structs[i]->latency_array);
+        free(my_structs[i]);
     }
-    printf("my_struct[0]->cpu_array[0] = %d\n", my_struct[0]->cpu_array[5]);
-    // FILE *csv = fopen(CSV_FILE, "w");
-    // if (csv == NULL)
-    // {
-    //     fprintf(stderr, "Error opening CSV file: %s\n", strerror(errno));
-    //     exit(EXIT_FAILURE);
-    // }
-    // fprintf(csv, "cpu, num_iterations, latency\n");
-    // for (int i = 0; i < NUM_THREADS; i++)
-    // {
-    //     for (int j = 0; j < num_iterations[i]; j++)
-    //     {
-    //         fprintf(csv, "%d, %d, %lu\n", my_struct[i]->cpu_array[j], my_struct[i]->num_iterations_aray[j], my_struct[i]->latency[j]);
-    //     }
-    //     free(my_struct[i]);
-    // }
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
+
+    for (int i = 0; i < NUM_THREADS; i++) {
         printf("[%d] latencia media = %06lu ns. | max = %07lu ns | num_iterations[] == %d \n", i, latency_sum[i] / num_iterations[i], latency_max[i], num_iterations[i]);
     }
     printf("Total latencia media = %06lu ns. | max = %07lu ns, total_num_iterations= %d \n", total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
-    // fclose(csv);
+    fclose(csv);
     close(latency_target_fd);
     free(num_iterations);
     free(latency_sum);
