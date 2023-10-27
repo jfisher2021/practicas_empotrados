@@ -17,7 +17,7 @@ data = pd.read_csv('cyclictestURJC.csv')
 # data3 = pd.read_csv('noRtIdle.csv')
 filename = sys.argv[1]
 
-data = pd.read_csv(filename)
+
 # Define a dictionary to map cases to their corresponding actions
 if filename == 'NRTB':
     data['LATENCIA'] = data['LATENCIA'] / 1000000
