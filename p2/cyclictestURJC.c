@@ -12,7 +12,7 @@
 
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define TIME 2
+#define TIME 60
 
 int *num_iterations;
 uint32_t *latency_sum;
