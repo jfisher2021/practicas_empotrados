@@ -45,7 +45,7 @@ elif filename == 'RTB':
 
 
 elif filename == 'RTH':
-    data['LATENCIA'] = data['LATENCIA'] / 1000000
+    data['LATENCIA'] = data['LATENCIA'] / 10000
     data['LATENCIA'].hist(bins=100, ax=ax, range=[0.00, 50.0], color='red',
                           alpha=0.5, edgecolor='black', label="Real Time - hackbench")
     plt.title('cyclictestURJC RaspberryPi - Kernel RT', fontsize=40)
