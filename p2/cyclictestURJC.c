@@ -152,7 +152,7 @@ int main() {
         fprintf(stderr, "Error opening file\n");
         return 1;
     }
-
+    fprintf(csv, "CPU,NUMERO_ITERACION,LATENCIA\n");
     for (int i = 0; i < NUM_THREADS; i++) {
         ret = pthread_join(threads[i], (void **)&my_structs[i]);
         if (ret != 0) {
