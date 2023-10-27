@@ -21,7 +21,7 @@ filename = sys.argv[1]
 # Define a dictionary to map cases to their corresponding actions
 if filename == 'NRTB':
     data['LATENCIA'] = data['LATENCIA'] / 1000
-    data['LATENCIA'].hist(bins=0, ax=ax, range=[0.00, 50.0], color='blue',
+    data['LATENCIA'].hist(bins=100, ax=ax, range=[0.00, 50.0], color='blue',
                           alpha=0.5, edgecolor='black', label="Non Real Time - bonnie++")
     plt.title('cyclictestURJC RaspberryPi - Kernel No RT', fontsize=40)
 
