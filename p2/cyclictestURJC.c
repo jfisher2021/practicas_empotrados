@@ -177,9 +177,11 @@ int main() {
 
     for (int i = 0; i < NUM_THREADS; i++) {
         printf("i = %d\n", i);
-        printf("[%d] latencia media = %06lu ns. | max = %07lu ns | num_iterations[%d] == %d \n", i, latency_sum[i] / num_iterations[i], latency_max[i], i, num_iterations[i]);
+        printf("[%d] latencia media = %06lu ns. | max = %07lu ns | num_iterations[%d] == %d \n", i,
+         latency_sum[i] / num_iterations[i], latency_max[i], i, num_iterations[i]);
     }
-    printf("Total latencia media = %06lu ns. | max = %07lu ns, total_num_iterations= %d \n", total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
+    printf("Total latencia media = %06lu ns. | max = %07lu ns, total_num_iterations= %d \n",
+     total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
     fclose(csv);
     close(latency_target_fd);
     free(num_iterations);
