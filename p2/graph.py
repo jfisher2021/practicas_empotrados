@@ -26,8 +26,8 @@ if filename == 'NRTB':
     plt.title('cyclictestURJC RaspberryPi - Kernel No RT', fontsize=40)
 
 elif filename == 'NRTH':
-    data['LATENCIA'] = data['LATENCIA'] / 1000000
-    data['LATENCIA'].hist(bins=100, ax=ax, range=[0.00, 50.0], color='red',
+    data['LATENCIA'] = data['LATENCIA'] / 1000
+    data['LATENCIA'].hist(bins=100, ax=ax, range=[0.00, 0.05], color='red',
                           alpha=0.5, edgecolor='black', label="Non Real Time - hackbench")
     plt.title('cyclictestURJC RaspberryPi - Kernel No RT', fontsize=40)
 
