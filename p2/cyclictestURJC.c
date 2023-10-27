@@ -12,7 +12,7 @@
 
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define TIME 2
+#define TIME 60
 
 int *num_iterations;
 uint64_t *latency_sum;
@@ -21,7 +21,7 @@ uint64_t *latency_max;
 static int32_t latency_target_value = 0;
 static int32_t latency_target_fd = -1;
 
-struct ficheros {
+struct file_csv {
     int *cpu_array;
     int *num_iterations_array;
     uint64_t *latency_array;
@@ -39,10 +39,10 @@ double get_time() {
 
 void *thread_func(void *arg) {
     int cpu = *(int *)arg;
-    struct ficheros *my_struct = (struct ficheros *)malloc(sizeof(struct ficheros));
-    memset(my_struct, 0, sizeof(struct ficheros));
+    struct file_csv *my_struct = (struct file_csv *)malloc(sizeof(struct file_csv));
+    memset(my_struct, 0, sizeof(struct file_csv));
     double start_time = get_time();
-    double current_time;
+    double current_time = 0.0;
     cpu_set_t cpuset;
     pthread_t thread = pthread_self();
     struct sched_param param;
@@ -85,25 +85,25 @@ void *thread_func(void *arg) {
         exit(EXIT_FAILURE);
     }
 
-    start_time = get_time();  // Obtener el tiempo al inicio
-                              // while ((current_time - start_time) < TIME) {  // Comprobar si han pasado 60 segundos
-    num_iterations[cpu]++;
+    start_time = get_time();                      // Obtener el tiempo al inicio
+    while ((current_time - start_time) < TIME) {  // Comprobar si han pasado 60 segundos
+        num_iterations[cpu]++;
 
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    usleep(10000);  // 10 ms
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
-    latency_sum[cpu] += latency;
-    if (latency > latency_max[cpu]) {
-        latency_max[cpu] = latency;
+        struct timespec start, end;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        usleep(10000);  // 10 ms
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        latency = (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec) - 10000000;
+        latency_sum[cpu] += latency;
+        if (latency > latency_max[cpu]) {
+            latency_max[cpu] = latency;
+        }
+
+        current_time = get_time();  // Actualizar el tiempo actual
+        my_struct->num_iterations_array[num_iterations[cpu]] = num_iterations[cpu];
+        my_struct->cpu_array[num_iterations[cpu]] = cpu;
+        my_struct->latency_array[num_iterations[cpu]] = latency;
     }
-
-    current_time = get_time();  // Actualizar el tiempo actual
-    my_struct->num_iterations_array[num_iterations[cpu]] = num_iterations[cpu];
-    my_struct->cpu_array[num_iterations[cpu]] = cpu;
-    my_struct->latency_array[num_iterations[cpu]] = latency;
-    // }
 
     pthread_exit((void *)my_struct);
 }
@@ -121,7 +121,7 @@ int main() {
     memset(latency_sum, 0, NUM_THREADS * sizeof(uint64_t));
     latency_max = (uint64_t *)malloc(NUM_THREADS * sizeof(uint64_t));
     memset(latency_max, 0, NUM_THREADS * sizeof(uint64_t));
-    struct ficheros *my_structs[NUM_THREADS];
+    struct file_csv *my_structs[NUM_THREADS];
 
     if (num_iterations == NULL || latency_sum == NULL || latency_max == NULL) {
         fprintf(stderr, "Memory allocation error\n");
