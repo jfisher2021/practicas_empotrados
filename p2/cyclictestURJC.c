@@ -12,7 +12,7 @@
 
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
-#define TIME 6
+#define TIME 60
 
 int *num_iterations;
 uint64_t *latency_sum;
@@ -176,12 +176,11 @@ int main() {
     }
 
     for (int i = 0; i < NUM_THREADS; i++) {
-        printf("i = %d\n", i);
         printf("[%d] latencia media = %06lu ns. | max = %07lu ns | num_iterations[%d] == %d \n", i,
-         latency_sum[i] / num_iterations[i], latency_max[i], i, num_iterations[i]);
+               latency_sum[i] / num_iterations[i], latency_max[i], i, num_iterations[i]);
     }
     printf("Total latencia media = %06lu ns. | max = %07lu ns, total_num_iterations= %d \n",
-     total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
+           total_latency_sum / (NUM_THREADS * (total_num_iterations / NUM_THREADS)), total_latency_max, total_num_iterations);
     fclose(csv);
     close(latency_target_fd);
     free(num_iterations);
