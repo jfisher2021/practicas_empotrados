@@ -13,6 +13,7 @@
 #define CPU_LATENCY_FILE "/dev/cpu_dma_latency"
 #define CSV_FILE "cyclictestURJC.csv"
 #define TIME 60
+#define NUM_ITERACIONES 6000
 
 int *num_iterations;
 uint32_t *latency_sum;
@@ -32,7 +33,7 @@ double get_time() {
     it returns a structure of time divided into seconds and nanoseconds */
     struct timespec t;
     // clock_gettime() returns the current time of the clock CLOCK_REALTIME
-    clock_gettime(CLOCK_REALTIME, &t);
+    clock_gettime(CLOCK_MONOTONIC, &t);
 
     return (double)t.tv_sec + t.tv_nsec / 1e9;
 }
@@ -57,12 +58,12 @@ void *thread_func(void *arg) {
         exit(EXIT_FAILURE);
     }
 
-    my_struct->cpu_array = (int *)malloc(6000 * sizeof(int));
-    memset(my_struct->cpu_array, 0, 6000 * sizeof(int));
-    my_struct->num_iterations_array = (int *)malloc(6000 * sizeof(int));
-    memset(my_struct->num_iterations_array, 0, 6000 * sizeof(int));
-    my_struct->latency_array = (uint32_t *)malloc(6000 * sizeof(uint32_t));
-    memset(my_struct->latency_array, 0, 6000 * sizeof(uint32_t));
+    my_struct->cpu_array = (int *)malloc(NUM_ITERACIONES * sizeof(int));
+    memset(my_struct->cpu_array, 0, NUM_ITERACIONES * sizeof(int));
+    my_struct->num_iterations_array = (int *)malloc(NUM_ITERACIONES * sizeof(int));
+    memset(my_struct->num_iterations_array, 0, NUM_ITERACIONES * sizeof(int));
+    my_struct->latency_array = (uint32_t *)malloc(NUM_ITERACIONES * sizeof(uint32_t));
+    memset(my_struct->latency_array, 0, NUM_ITERACIONES * sizeof(uint32_t));
 
     if (my_struct->cpu_array == NULL || my_struct->num_iterations_array == NULL || my_struct->latency_array == NULL) {
         fprintf(stderr, "Error allocating memory for arrays in my_struct\n");
@@ -127,12 +128,14 @@ int main() {
         fprintf(stderr, "Memory allocation error\n");
         exit(EXIT_FAILURE);
     }
+
     // Inicializar num_iterations como un array
     latency_target_fd = open(CPU_LATENCY_FILE, O_RDWR);
     if (latency_target_fd < 0) {
         fprintf(stderr, "Error opening CPU latency file: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
     }
+
     ret = write(latency_target_fd, &latency_target_value, sizeof(latency_target_value));
     if (ret < 0) {
         fprintf(stderr, "Error setting CPU latency: %s\n", strerror(errno));
@@ -147,11 +150,13 @@ int main() {
             exit(EXIT_FAILURE);
         }
     }
+
     FILE *csv = fopen(CSV_FILE, "w");
     if (csv == NULL) {
         fprintf(stderr, "Error opening file\n");
         return 1;
     }
+    
     fprintf(csv, "CPU,NUMERO_ITERACION,LATENCIA\n");
     for (int i = 0; i < NUM_THREADS; i++) {
         ret = pthread_join(threads[i], (void **)&my_structs[i]);
@@ -165,7 +170,7 @@ int main() {
         if (latency_max[i] > total_latency_max) {
             total_latency_max = latency_max[i];
         }
-        for (int j = 0; j < 6000; j++) {
+        for (int j = 0; j < NUM_ITERACIONES; j++) {
             fprintf(csv, "%d,%d,%u\n", my_structs[i]->cpu_array[j], my_structs[i]->num_iterations_array[j], my_structs[i]->latency_array[j]);
         }
 
