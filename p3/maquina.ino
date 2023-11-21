@@ -40,25 +40,59 @@
 
 */
 
+
+
 // include the library code:
 #include <LiquidCrystal.h>
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+
+const int Trigger = 8;  //Pin digital 8 para el Trigger del sensor
+const int Echo = 7;     //Pin digital 7 para el echo del sensor
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
+void sensor_distancia() {
+  long t;  //timepo que demora en llegar el eco
+  long d;  //distancia en centimetros
+
+  digitalWrite(Trigger, HIGH);
+  delayMicroseconds(10);  //Enviamos un pulso de 10us
+  digitalWrite(Trigger, LOW);
+
+  t = pulseIn(Echo, HIGH);  //obtenemos el ancho del pulso
+  d = t / 59;               //escalamos el tiempo a una distancia en cm
+
+  Serial.print("Distancia: ");
+  Serial.print(d);  //Enviamos serialmente el valor de la distancia
+  Serial.print("cm");
+  Serial.println();
+
+  delay(100);  //Hacemos una pausa de 100ms
+  lcd.setCursor(1, 0);
+  lcd.print("distancia");
+  lcd.setCursor(0, 1);
+}
+
 void setup() {
+  Serial.begin(9600);          //iniciailzamos la comunicación
+  pinMode(Trigger, OUTPUT);    //pin como salida
+  pinMode(Echo, INPUT);        //pin como entrada
+  digitalWrite(Trigger, LOW);  //Inicializamos el pin con 0
+
   // set up the LCD's number of columns and rows:
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.print("hello, world!");
+  lcd.print("CARGANDO ...");
 }
 
 void loop() {
   // set the cursor to column 0, line 1
   // (note: line 1 is the second row, since counting begins with 0):
-  lcd.setCursor(0, 1);
+  sensor_distancia();
   // print the number of seconds since reset:
-  lcd.print(millis() / 1000);
+  lcd.print(d);
+  delay(200);
+  lcd.clear();
 }
