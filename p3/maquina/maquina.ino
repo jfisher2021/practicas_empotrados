@@ -79,17 +79,17 @@ const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
-    Serial.begin(9600);  // Iniciamos la comunicación
-    pinMode(PIN_LED, OUTPUT);
-    pinMode(PIN_SW, INPUT_PULLUP);
-    pinMode(PIN_TRIGGER, OUTPUT);    // Pin como salida
-    pinMode(PIN_ECHO, INPUT);        // Pin como entrada
-    digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
-    pinMode(BOTON, INPUT_PULLUP);    // Pin como entrada
-    // dht.begin();                     // Inicializamos el sensor DHT11
+  Serial.begin(9600);  // Iniciamos la comunicación
+  pinMode(PIN_LED, OUTPUT);
+  pinMode(PIN_SW, INPUT_PULLUP);
+  pinMode(PIN_TRIGGER, OUTPUT);    // Pin como salida
+  pinMode(PIN_ECHO, INPUT);        // Pin como entrada
+  digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
+  pinMode(BOTON, INPUT_PULLUP);    // Pin como entrada
+  // dht.begin();                     // Inicializamos el sensor DHT11
 
-    lcd.begin(16, 2);
-    state = START;
+  lcd.begin(16, 2);
+  state = START;
 }
 
 /* void sensor_temperatura_humedad() {
@@ -128,416 +128,376 @@ void setup() {
 }
  */
 void start() {
-    lcd.print("CARGANDO ...");
+  lcd.print("CARGANDO ...");
+  delay(1000);
+
+  // Blink PIN_LED 3 times
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(PIN_LED, HIGH);
     delay(1000);
+    digitalWrite(PIN_LED, LOW);
+    delay(1000);
+  }
 
-    // Blink PIN_LED 3 times
-    for (int i = 0; i < 3; i++) {
-        digitalWrite(PIN_LED, HIGH);
-        delay(1000);
-        digitalWrite(PIN_LED, LOW);
-        delay(1000);
-    }
-
-    lcd.clear();
+  lcd.clear();
 }
 
 int sensor_distancia() {
-    long t;          // Tiempo que demora en llegar el eco
-    long distancia;  // Distancia en centímetros
+  long t;          // Tiempo que demora en llegar el eco
+  long distancia;  // Distancia en centímetros
 
-    digitalWrite(PIN_TRIGGER, HIGH);
-    delayMicroseconds(10);  // Enviamos un pulso de 10us
-    digitalWrite(PIN_TRIGGER, LOW);
+  digitalWrite(PIN_TRIGGER, HIGH);
+  delayMicroseconds(10);  // Enviamos un pulso de 10us
+  digitalWrite(PIN_TRIGGER, LOW);
 
-    t = pulseIn(PIN_ECHO, HIGH);  // Obtenemos el ancho del pulso
-    distancia = t / 59;           // Escalamos el tiempo a una distancia en cm
+  t = pulseIn(PIN_ECHO, HIGH);  // Obtenemos el ancho del pulso
+  distancia = t / 59;           // Escalamos el tiempo a una distancia en cm
 
-    return distancia;
+  return distancia;
 }
 void productos(int product) {
-    switch (product) {
+  switch (product) {
     case 0:
-        lcd.setCursor(0, 0);
-        lcd.print("cafe solo");
-        lcd.setCursor(0, 1);
-        lcd.print(cafe_solo);
-        lcd.setCursor(5, 1);
-        lcd.print("$");
-        break;
+      lcd.setCursor(0, 0);
+      lcd.print("cafe solo");
+      lcd.setCursor(0, 1);
+      lcd.print(cafe_solo);
+      lcd.setCursor(5, 1);
+      lcd.print("$");
+      break;
     case 1:
-        lcd.setCursor(0, 0);
-        lcd.print("cafe cortado");
-        lcd.setCursor(0, 1);
-        lcd.print(cafe_cortado);
-        lcd.setCursor(5, 1);
-        lcd.print("$");
-        break;
+      lcd.setCursor(0, 0);
+      lcd.print("cafe cortado");
+      lcd.setCursor(0, 1);
+      lcd.print(cafe_cortado);
+      lcd.setCursor(5, 1);
+      lcd.print("$");
+      break;
     case 2:
-        lcd.setCursor(0, 0);
-        lcd.print("cafe doble");
-        lcd.setCursor(0, 1);
-        lcd.print(cafe_doble);
-        lcd.setCursor(5, 1);
-        lcd.print("$");
-        break;
+      lcd.setCursor(0, 0);
+      lcd.print("cafe doble");
+      lcd.setCursor(0, 1);
+      lcd.print(cafe_doble);
+      lcd.setCursor(5, 1);
+      lcd.print("$");
+      break;
     case 3:
-        lcd.setCursor(0, 0);
-        lcd.print("cafe premium");
-        lcd.setCursor(0, 1);
-        lcd.print(cafe_premium);
-        lcd.setCursor(5, 1);
-        lcd.print("$");
-        break;
+      lcd.setCursor(0, 0);
+      lcd.print("cafe premium");
+      lcd.setCursor(0, 1);
+      lcd.print(cafe_premium);
+      lcd.setCursor(5, 1);
+      lcd.print("$");
+      break;
     case 4:
-        lcd.setCursor(0, 0);
-        lcd.print("chocolate");
-        lcd.setCursor(0, 1);
-        lcd.print(chocolate);
-        lcd.setCursor(5, 1);
-        lcd.print("$");
-        break;
+      lcd.setCursor(0, 0);
+      lcd.print("chocolate");
+      lcd.setCursor(0, 1);
+      lcd.print(chocolate);
+      lcd.setCursor(5, 1);
+      lcd.print("$");
+      break;
     default:
-        break;
-    }
+      break;
+  }
 }
 void preparando_cafe() {
-    lcd.clear();
-    static unsigned long previous = 0;            // tiempo anterior
-    unsigned long cofee_time = millis();          // tiempo actual
-    unsigned long listo_pa = random(4000, 8000);  // 4 a 8 segundos
-    if (cofee_time - previous >= listo_pa) {
-        previous = cofee_time;
-        lcd.setCursor(0, 0);
-        lcd.print("PREPARANDO");
-        lcd.setCursor(0, 1);
-        lcd.print("CAFE");
-        int analogValue;
-        unsigned long startTime = millis();
+  lcd.clear();
+  static unsigned long previous_time_coffe = 0;  // tiempo anterior
+  unsigned long cofee_time = millis();           // tiempo actual
+  unsigned long listo_pa = random(4000, 8000);   // 4 a 8 segundos
+  if (cofee_time - previous_time_coffe >= listo_pa) {
+    previous_time_coffe = cofee_time;
+    lcd.setCursor(0, 0);
+    lcd.print("PREPARANDO");
+    lcd.setCursor(0, 1);
+    lcd.print("CAFE");
+    int analogValue;
+    unsigned long startTime_coffe = millis();
 
-        // Bucle while para simular el progreso de la preparación
-        while (millis() - startTime <= listo_pa) {
-            int progress = map(millis() - startTime, 0, listo_pa, 0, 255);
-            analogValue = map(progress, 0, 255, 0, 255);
-            analogWrite(PIN_LED2, analogValue);
-        }
-
-        // Mostrar "RETIRE BEBIDA" durante 3 segundos
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("RETIRE BEBIDA");
-
-        // Esperar 3 segundos sin bloquear el bucle principal
-        unsigned long removeDrinkTime = millis();
-        while (millis() - removeDrinkTime <= 3000) {
-        }
-
-        lcd.clear();
-
-        // Volver a la funcionalidad inicial de Servicio
-        state = SERVICE;
-        analogWrite(PIN_LED2, LOW);
+    // Bucle while para simular el progreso de la preparación
+    while (millis() - startTime_coffe <= listo_pa) {
+      int progress = map(millis() - startTime_coffe, 0, listo_pa, 0, 255);
+      analogValue = map(progress, 0, 255, 0, 255);
+      analogWrite(PIN_LED2, analogValue);
     }
+
+    // Mostrar "RETIRE BEBIDA" durante 3 segundos
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("RETIRE BEBIDA");
+
+    // Esperar 3 segundos sin bloquear el bucle principal
+    unsigned long removeDrinkTime = millis();
+    while (millis() - removeDrinkTime <= 3000) {
+    }
+
+    lcd.clear();
+
+    // Volver a la funcionalidad inicial de Servicio
+    state = SERVICE;
+    analogWrite(PIN_LED2, LOW);
+  }
 }
-// void admin() {
-//     int y = analogRead(PIN_VRy);
-//     int y_ang = map(y, 0, 1023, 0, 180);
-//     // Imprimir datos al monitor serie
+void admin() {
+  int distancia_admin = 0;
+  int x_admin = analogRead(PIN_VRx);
+  int y_admin = analogRead(PIN_VRy);
+  int y_ang_admin = map(y_admin, 0, 1023, 0, 180);
+  int x_ang_admin = map(x_admin, 0, 1023, 0, 180);
+  // Imprimir datos al monitor serie
 
-//     Serial.print("Y_ang:");
-//     Serial.print(y_ang);
-//     Serial.println();
-//     Serial.print(" SW:");
-//     Serial.print(digitalRead(PIN_SW));
-//     Serial.println();
-//     digitalWrite(PIN_LED, HIGH);
-//     digitalWrite(PIN_LED2, HIGH);
+  Serial.print("Y_ang_admin:");
+  Serial.print(y_ang_admin);
+  Serial.println();
+  Serial.print(" SW_admin:");
+  Serial.print(digitalRead(PIN_SW));
+  Serial.println();
+  digitalWrite(PIN_LED, HIGH);
+  digitalWrite(PIN_LED2, HIGH);
 
-//     static unsigned long previousMillis = 0;
-//     const long interval = 300;  // Ajusta este intervalo según sea necesario
+  static unsigned long previousMillis = 0;
+  const long interval = 300;  // Ajusta este intervalo según sea necesario
 
-//     unsigned long currentMillis = millis();
+  unsigned long currentMillis = millis();
 
-//     int x = analogRead(PIN_VRx);
-//     int x_ang = map(x, 0, 1023, 0, 180);
 
-//     if (currentMillis - previousMillis >= interval) {
-//         previousMillis = currentMillis;
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
 
-//         if (digitalRead(BOTON) == LOW) {
-//             if (buttonPressStartTime == 0) {
-//                 // Si el botón acaba de ser presionado, registra el tiempo actual
-//                 buttonPressStartTime = millis();
-//             }
-//         } else {
-//             // Reinicia el tiempo de inicio si el botón no está siendo presionado
-//             buttonPressStartTime = 0;
-//         }
+    if (x_admin > 100) {
+      product++;
+      if (product > 4) {
+        product = 0;
+      }
+    } else if (x_admin < 80) {
+      product--;
+      if (product < 0) {
+        product = 4;
+      }
+    }
 
-//         if (buttonPressStartTime > 0 && (currentMillis - buttonPressStartTime >= 5000)) {
-//             // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
-//             state = ADMIN;
-//             buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
-//         }
+    // Imprimir datos al monitor serie
+    Serial.print("X_ang_admin:");
+    Serial.print(x_ang_admin);
+    Serial.print("  ");
 
-//         if (x_ang > 100) {
-//             product++;
-//             if (product > 4) {
-//                 product = 0;
-//             }
-//         } else if (x_ang < 80) {
-//             product--;
-//             if (product < 0) {
-//                 product = 4;
-//             }
-//         }
+    Serial.print(" SW_admin:");
+    Serial.print(digitalRead(PIN_SW));
+    Serial.print(" product");
+    Serial.print(product);
 
-//         // Imprimir datos al monitor serie
-//         Serial.print("X_ang:");
-//         Serial.print(x_ang);
-//         Serial.print("  ");
 
-//         Serial.print(" SW:");
-//         Serial.print(digitalRead(PIN_SW));
-//         Serial.print(" product");
-//         Serial.print(product);
-//         Serial.print(" Button Press Time: ");
-//         Serial.println(currentMillis - buttonPressStartTime);
-
-//         lcd.clear();
-//         if (digitalRead(PIN_SW) == LOW) {
-//             state = WAITING;
-//         }
-//         switch (product) {
-//         case 0:
-//             lcd.setCursor(0, 0);
-//             lcd.print("temperatura: XX ºC");
-//             lcd.setCursor(0, 1);
-//             lcd.print("humedad: YY%");
-//             break;
-//         case 1:
-//             lcd.setCursor(0, 0);
-//             int distancia = sensor_distancia();
-//             lcd.print("DISTANCIA:");
-//             lcd.setCursor(0, 1);
-//             lcd.print(distancia);
-//             lcd.setCursor(5, 1);
-//             lcd.print("cm");
-//             break;
-//         case 2:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Tiempo ZZ seg");
-//             lcd.setCursor(0, 1);
-//             lcd.print("s");
-//             break;
-//         case 3:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Cafe Prem1.50");
-//             break;
-//         case 4:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Choco 2.00");
-//             break;
-//         default:
-//             break;
-//         }
-//     }
+    lcd.clear();
+    if (digitalRead(PIN_SW) == LOW) {
+      state = WAITING;
+    }
+    switch (product) {
+      case 0:
+        lcd.setCursor(0, 0);
+        lcd.print("temperatura: XX ºC");
+        lcd.setCursor(0, 1);
+        lcd.print("humedad: YY%");
+        break;
+      case 1:
+        lcd.setCursor(0, 0);
+        distancia_admin = sensor_distancia();
+        lcd.print("DISTANCIA ADMIN:");
+        lcd.setCursor(0, 1);
+        lcd.print(distancia_admin);
+        lcd.setCursor(5, 1);
+        lcd.print("cm");
+        break;
+      case 2:
+        lcd.setCursor(0, 0);
+        lcd.print("Tiempo ZZ seg");
+        lcd.setCursor(0, 1);
+        lcd.print("s");
+        break;
+      case 3:
+        lcd.setCursor(0, 0);
+        lcd.print("Cafe Prem1.50");
+        break;
+      case 4:
+        lcd.setCursor(0, 0);
+        lcd.print("Choco 2.00");
+        break;
+      default:
+        break;
+    }
+  }
 // }
 // void cambiar_precio() {
-//     int y = analogRead(PIN_VRy);
-//     int y_ang = map(y, 0, 1023, 0, 180);
-//     // Imprimir datos al monitor serie
+//   int y_presio = analogRead(PIN_VRy);
+//   int y_ang_presio = map(y_presio, 0, 1023, 0, 180);
+//   // Imprimir datos al monitor serie
 
-//     Serial.print("Y_ang:");
-//     Serial.print(y_ang);
-//     Serial.println();
+//   Serial.print("Y_ang_presio:");
+//   Serial.print(y_ang_presio);
+//   Serial.println();
+//   Serial.print(" SW_presio:");
+//   Serial.print(digitalRead(PIN_SW));
+//   Serial.println();
+//   digitalWrite(PIN_LED, HIGH);
+//   digitalWrite(PIN_LED2, HIGH);
+
+//   static unsigned long previousMillis = 0;
+//   const long interval = 300;  // Ajusta este intervalo según sea necesario
+
+//   unsigned long currentMillis = millis();
+
+//   int x_presio = analogRead(PIN_VRx);
+//   int x_ang_presio = map(x_presio, 0, 1023, 0, 180);
+
+//   if (currentMillis - previousMillis >= interval) {
+//     previousMillis = currentMillis;
+//     lcd.clear();
+
+//     if (x_ang_presio > 100) {
+//       product++;
+//       if (product > 4) {
+//         product = 0;
+//       }
+//     } else if (x_ang_presio < 80) {
+//       product--;
+//       if (product < 0) {
+//         product = 4;
+//       }
+//     }
+
+//     productos(product);
+//   }
+// }
+// void mostrar_productos() {
+//   static unsigned long previousMillis = 0;
+//   const long interval = 300;  // Ajusta este intervalo según sea necesario
+
+//   unsigned long currentMillis = millis();
+
+//   int x_productos = analogRead(PIN_VRx);
+//   int x_ang_productos = map(x_productos, 0, 1023, 0, 180);
+
+//   if (currentMillis - previousMillis >= interval) {
+//     previousMillis = currentMillis;
+
+//     if (x_ang_productos > 100) {
+//       product++;
+//       if (product > 4) {
+//         product = 0;
+//       }
+//     } else if (x_ang_productos < 80) {
+//       product--;
+//       if (product < 0) {
+//         product = 4;
+//       }
+//     }
+
+//     // Imprimir datos al monitor serie
+//     Serial.print("X_ang_productos :");
+//     Serial.print(x_ang_productos);
+//     Serial.print("  ");
+
 //     Serial.print(" SW:");
 //     Serial.print(digitalRead(PIN_SW));
-//     Serial.println();
-//     digitalWrite(PIN_LED, HIGH);
-//     digitalWrite(PIN_LED2, HIGH);
+//     Serial.print(" product");
+//     Serial.print(product);
 
-//     static unsigned long previousMillis = 0;
-//     const long interval = 300;  // Ajusta este intervalo según sea necesario
-
-//     unsigned long currentMillis = millis();
-
-//     int x = analogRead(PIN_VRx);
-//     int x_ang = map(x, 0, 1023, 0, 180);
-
-//     if (currentMillis - previousMillis >= interval) {
-//         previousMillis = currentMillis;
-
-//         if (x_ang > 100) {
-//             product++;
-//             if (product > 4) {
-//                 product = 0;
-//             }
-//         } else if (x_ang < 80) {
-//             product--;
-//             if (product < 0) {
-//                 product = 4;
-//             }
-//         }
-
-//         swich(product) {
-//         case 0:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Cafe So");
-
-//             break;
-//         case 1:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Cafe Cor1.10");
-//             break;
-//         case 2:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Cafe Do1.25");
-//             break;
-//         case 3:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Cafe Prem1.50");
-//             break;
-//         case 4:
-//             lcd.setCursor(0, 0);
-//             lcd.print("Choco 2.00");
-//             break;
-//         default:
-//             break;
-//         }
+//     lcd.clear();
+//     if (digitalRead(PIN_SW) == LOW) {
+//       cambiar_precio();
 //     }
-// // }
-// void mostrar_productos() {
-//     static unsigned long previousMillis = 0;
-//     const long interval = 300;  // Ajusta este intervalo según sea necesario
-
-//     unsigned long currentMillis = millis();
-
-//     int x = analogRead(PIN_VRx);
-//     int x_ang = map(x, 0, 1023, 0, 180);
-
-//     if (currentMillis - previousMillis >= interval) {
-//         previousMillis = currentMillis;
-
-//         if (x_ang > 100) {
-//             product++;
-//             if (product > 4) {
-//                 product = 0;
-//             }
-//         } else if (x_ang < 80) {
-//             product--;
-//             if (product < 0) {
-//                 product = 4;
-//             }
-//         }
-
-//         // Imprimir datos al monitor serie
-//         Serial.print("X_ang:");
-//         Serial.print(x_ang);
-//         Serial.print("  ");
-
-//         Serial.print(" SW:");
-//         Serial.print(digitalRead(PIN_SW));
-//         Serial.print(" product");
-//         Serial.print(product);
-//         Serial.print(" Button Press Time: ");
-//         Serial.println(currentMillis - buttonPressStartTime);
-
-//         lcd.clear();
-//         if (digitalRead(PIN_SW) == LOW) {
-//             cambiar_precio();
-//         }
-//         productos(product);
-//     }
+//     productos(product);
+//   }
 // }
 void servicio() {
-    static unsigned long buttonPressStartTime = 0;
-    static unsigned long previousMillis = 0;
-    const long interval = 300;  // Ajusta este intervalo según sea necesario
+  static unsigned long buttonPressStartTime = 0;
+  static unsigned long previousMillis = 0;
+  const long interval = 300;  // Ajusta este intervalo según sea necesario
 
-    unsigned long currentMillis = millis();
+  unsigned long currentMillis = millis();
 
-    int x = analogRead(PIN_VRx);
-    int x_ang = map(x, 0, 1023, 0, 180);
+  int x_servicio = analogRead(PIN_VRx);
+  int x_ang_servicio = map(x_servicio, 0, 1023, 0, 180);
 
-    if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
 
-        if (digitalRead(BOTON) == LOW) {
-            if (buttonPressStartTime == 0) {
-                // Si el botón acaba de ser presionado, registra el tiempo actual
-                buttonPressStartTime = millis();
-            }
-        } else {
-            // Reinicia el tiempo de inicio si el botón no está siendo presionado
-            buttonPressStartTime = 0;
-        }
-
-        if (buttonPressStartTime > 0 && (currentMillis - buttonPressStartTime >= 5000)) {
-            // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
-            state = ADMIN;
-            buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
-        }
-
-        if (x_ang > 100) {
-            product++;
-            if (product > 4) {
-                product = 0;
-            }
-        } else if (x_ang < 80) {
-            product--;
-            if (product < 0) {
-                product = 4;
-            }
-        }
-
-        // Imprimir datos al monitor serie
-        Serial.print("X_ang:");
-        Serial.print(x_ang);
-        Serial.print("  ");
-
-        Serial.print(" SW:");
-        Serial.print(digitalRead(PIN_SW));
-        Serial.print(" product");
-        Serial.print(product);
-        Serial.print(" Button Press Time: ");
-        Serial.println(currentMillis - buttonPressStartTime);
-
-        lcd.clear();
-        if (digitalRead(PIN_SW) == LOW) {
-            state = WAITING;
-        }
-        productos(product);
+    if (digitalRead(BOTON) == LOW) {
+      if (buttonPressStartTime == 0) {
+        // Si el botón acaba de ser presionado, registra el tiempo actual
+        buttonPressStartTime = millis();
+      }
+    } else {
+      // Reinicia el tiempo de inicio si el botón no está siendo presionado
+      buttonPressStartTime = 0;
     }
+
+    if (buttonPressStartTime > 0 && (currentMillis - buttonPressStartTime >= 5000)) {
+      // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
+      state = ADMIN;
+      buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
+    }
+
+    if (x_ang_servicio > 100) {
+      product++;
+      if (product > 4) {
+        product = 0;
+      }
+    } else if (x_ang_servicio < 80) {
+      product--;
+      if (product < 0) {
+        product = 4;
+      }
+    }
+
+    // Imprimir datos al monitor serie
+    Serial.print("X_ang_servicio:");
+    Serial.print(x_ang_servicio);
+    Serial.print("  ");
+
+    Serial.print(" SW:");
+    Serial.print(digitalRead(PIN_SW));
+    Serial.print(" product");
+    Serial.print(product);
+    Serial.print(" Button Press Time: ");
+    Serial.println(currentMillis - buttonPressStartTime);
+
+    lcd.clear();
+    if (digitalRead(PIN_SW) == LOW) {
+      state = WAITING;
+    }
+    productos(product);
+  }
 }
 
 void loop() {
-    switch (state) {
+  int distancia_persona = 0;
+  switch (state) {
     case START:
-        start();
-        state = SERVICE;
-        break;
+      start();
+      state = SERVICE;
+      break;
     case SERVICE:
-        int distancia = sensor_distancia();
-        if (distancia > 100) {
-            lcd.print("Fuera de rango");
-            delay(200);
-            lcd.clear();
+      distancia_persona = sensor_distancia();
+      if (distancia_persona > 100) {
+        lcd.print("Fuera de rango");
+        delay(200);
+        lcd.clear();
 
-        } else {
-            servicio();
-        }
-        break;
+      } else {
+        servicio();
+      }
+      break;
     case WAITING:
-        preparando_cafe();
-        break;
+      preparando_cafe();
+      break;
     case PRODUCT:
-        break;
+      break;
     case ADMIN:
-        // admin();
-        break;
+      // admin();
+      break;
     default:
-        break;
-    }
-    // sensor_temperatura_humedad();
+      break;
+  }
+  // sensor_temperatura_humedad();
 }
