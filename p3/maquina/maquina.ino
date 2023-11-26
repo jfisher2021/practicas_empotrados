@@ -1,13 +1,10 @@
+// include the library code:
+#include <DHT.h>
+#include <LiquidCrystal.h>
+#include <StaticThreadController.h>
+#include <Thread.h>
+#include <ThreadController.h>
 /*
-LiquidCrystal Library - Hello World
-
-Demonstrates the use a 16x2 LCD display.  The LiquidCrystal
-library works with all LCD displays that are compatible with the
-Hitachi HD44780 driver. There are many of them out there, and you
-can usually tell them by the 16-pin interface.
-
-This sketch prints "Hello World!" to the LCD
-and shows the time.
 
 The circuit:
 * LCD RS pin to digital pin 12
@@ -23,30 +20,32 @@ The circuit:
 * ends to +5V and ground
 * wiper to LCD VO pin (pin 3)
 
-Library originally added 18 Apr 2008
-by David A. Mellis
-library modified 5 Jul 2009
-by Limor Fried (http://www.ladyada.net)
-example added 9 Jul 2009
-by Tom Igoe
-modified 22 Nov 2010
-by Tom Igoe
-modified 7 Nov 2016
-by Arturo Guadalupi
-
-This example code is in the public domain.
-
-https://docs.arduino.cc/learn/electronics/lcd-displayss
 
 */
-
-// include the library code:
-#include <DHT.h>
-#include <LiquidCrystal.h>
 
 // initialize the library by associating any needed LCD interface pin
 // with the arduino pin number it is connected to
 
+class LedThread : public Thread {
+public:
+    int pin;
+    bool state;
+    int num_parpadeos = 0;
+    LedThread(int _pin) : Thread() {
+        pin = _pin;
+        state = true;
+        pinMode(pin, OUTPUT);
+    }
+    bool shouldRun(unsigned long time) {
+        return Thread::shouldRun(time);
+    }
+    void run() {
+        Thread::run();
+        digitalWrite(pin, state ? HIGH : LOW);
+        state = !state;
+        num_parpadeos++;
+    }
+};
 // states
 #define START 1
 #define SERVICE 2
@@ -65,8 +64,10 @@ https://docs.arduino.cc/learn/electronics/lcd-displayss
 // #define DHTPIN       // Pin digital 2 para el sensor
 // #define DHTTYPE DHT11  // DHT 11
 
-// DHT dht(DHTPIN, DHTTYPE);
+ThreadController controller = ThreadController();
+LedThread* parpadeo = new LedThread(PIN_LED);
 
+// DHT dht(DHTPIN, DHTTYPE);
 int state;
 int valor = 0;
 float cafe_solo = 1;
@@ -88,9 +89,12 @@ void setup() {
     digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
     pinMode(BOTON, INPUT_PULLUP);    // Pin como entrada
     // dht.begin();                     // Inicializamos el sensor DHT11
+    parpadeo->setInterval(1000);  // Establecer el intervalo de ejecución del thread
+    controller.add(parpadeo);     // Agregar los threads al controlador
 
     lcd.begin(16, 2);
     state = START;
+    lcd.clear();
 }
 
 /* void sensor_temperatura_humedad() {
@@ -129,18 +133,15 @@ void setup() {
 }
  */
 void start() {
-    lcd.clear();
-    lcd.print("CARGANDO ...");
-    delay(1000);
-
-    // Blink PIN_LED 3 times
-    for (int i = 0; i < 3; i++) {
-        digitalWrite(PIN_LED, HIGH);
-        delay(1000);
-        digitalWrite(PIN_LED, LOW);
-        delay(1000);
+    if (parpadeo->num_parpadeos < 6) {
+        controller.add(parpadeo);
+        lcd.setCursor(0, 0);
+        lcd.print("CARGANDO...");
+    } else {
+        controller.remove(parpadeo);
+        lcd.clear();
+        state = SERVICE;
     }
-    lcd.clear();
 }
 
 int sensor_distancia() {
@@ -233,12 +234,12 @@ void servicio() {
             buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
         }
 
-        if (x_ang_servicio > 100) {
+        if (x_ang_servicio > 110) {
             product++;
             if (product > 4) {
                 product = 0;
             }
-        } else if (x_ang_servicio < 80) {
+        } else if (x_ang_servicio < 70) {
             product--;
             if (product < 0) {
                 product = 4;
@@ -308,7 +309,7 @@ void admin(int option_) {
     int y_admin = analogRead(PIN_VRy);
     int y_ang_admin = map(y_admin, 0, 1023, 0, 180);
     int x_ang_admin = map(x_admin, 0, 1023, 0, 180);
-    while (y_ang_admin > 80) {
+    while (y_ang_admin > 70) {
         y_admin = analogRead(PIN_VRy);
         y_ang_admin = map(y_admin, 0, 1023, 0, 180);
         const long interval = 250;  // Ajusta este intervalo según sea necesario
@@ -352,7 +353,8 @@ void admin(int option_) {
                 lcd.print("s");
                 break;
             case 3:
-                cambiar_precio();
+                state = PRESIO;
+                y_ang_admin = 0;
                 break;
             default:
                 break;
@@ -363,17 +365,19 @@ void admin(int option_) {
 }
 
 void cambiar_precio() {
-    int producto_modificar = 0;
+    static int producto_modificar = 0;
     int y_presio = analogRead(PIN_VRy);
     int y_ang_presio = map(y_presio, 0, 1023, 0, 180);
-    bool FIRST_TIME = true;
-    bool pulsado = false;
-    float cambiar_presio = 0;
+    static int atras = 0;
+    static bool FIRST_TIME = true;
+    static bool pulsado = false;
+    static float cambiar_presio = 0;
     int x_presio = analogRead(PIN_VRx);
     int x_ang_presio = map(x_presio, 0, 1023, 0, 180);
     unsigned long interval = 250;
-    while (y_ang_presio > 80) {
-        // Imprimir datos al monitor serie
+    // Imprimir datos al monitor serie
+
+    if (millis() - previousMillis_precio >= interval) {
         y_presio = analogRead(PIN_VRy);
         y_ang_presio = map(y_presio, 0, 1023, 0, 180);
         x_presio = analogRead(PIN_VRx);
@@ -385,63 +389,73 @@ void cambiar_precio() {
         Serial.print(" SW_presio:");
         Serial.print(digitalRead(PIN_SW));
         Serial.println();
-
-        if (millis() - previousMillis_precio >= interval) {
-            if (digitalRead(PIN_SW) == HIGH) {
-                FIRST_TIME = false;
-            }
-            if (FIRST_TIME == false) {
-                if (digitalRead(PIN_SW) == LOW) {
-                    pulsado = true;
-                }
-                lcd.clear();
-                previousMillis_precio = millis();
-                if (pulsado == true) {
-                    if (x_ang_presio > 100) {
-                        cambiar_presio += 0.05;
-
-                    } else if (x_ang_presio < 80) {
-                        cambiar_presio -= 0.05;
-                    }
-                    switch (valor) {
-                    case 0:
-                        cafe_solo = cafe_solo + cambiar_presio;
-                        break;
-                    case 1:
-                        cafe_cortado = cafe_cortado + cambiar_presio;
-                        break;
-                    case 2:
-                        cafe_doble = cafe_doble + cambiar_presio;
-                        break;
-                    case 3:
-                        cafe_premium = cafe_premium + cambiar_presio;
-                        break;
-                    case 4:
-                        chocolate = chocolate + cambiar_presio;
-                        break;
-                    default:
-                        break;
-                    }
-                } else {
-                    if (x_ang_presio > 100) {
-                        producto_modificar++;
-                        if (producto_modificar > 4) {
-                            producto_modificar = 0;
-                        }
-                    } else if (x_ang_presio < 80) {
-                        producto_modificar--;
-                        if (producto_modificar < 0) {
-                            producto_modificar = 4;
-                        }
-                    }
-                    valor = producto_modificar;
-                }
-            }
-            productos(valor);
+        Serial.print("atras:");
+        Serial.print(atras);
+        Serial.println();
+        if (digitalRead(PIN_SW) == HIGH) {
+            FIRST_TIME = false;
         }
+        if (atras == 2) {
+            state = ADMIN;
+            atras = 0;
+        }
+        if (FIRST_TIME == false) {
+            if (y_ang_presio < 70) {
+                pulsado = false;
+                atras++;
+            }
+            if (digitalRead(PIN_SW) == LOW) {
+                pulsado = true;
+            }
+            lcd.clear();
+            previousMillis_precio = millis();
+            if (pulsado == true) {
+                atras = 0;
+                if (x_ang_presio > 110) {
+                    cambiar_presio += 0.05;
+
+                } else if (x_ang_presio < 70) {
+                    cambiar_presio -= 0.05;
+                }
+                switch (valor) {
+                case 0:
+                    cafe_solo = cafe_solo + cambiar_presio;
+                    break;
+                case 1:
+                    cafe_cortado = cafe_cortado + cambiar_presio;
+                    break;
+                case 2:
+                    cafe_doble = cafe_doble + cambiar_presio;
+                    break;
+                case 3:
+                    cafe_premium = cafe_premium + cambiar_presio;
+                    break;
+                case 4:
+                    chocolate = chocolate + cambiar_presio;
+                    break;
+                default:
+                    break;
+                }
+            } else {
+                if (x_ang_presio > 110) {
+                    producto_modificar++;
+                    if (producto_modificar > 4) {
+                        producto_modificar = 0;
+                    }
+                } else if (x_ang_presio < 70) {
+                    producto_modificar--;
+                    if (producto_modificar < 0) {
+                        producto_modificar = 4;
+                    }
+                }
+                valor = producto_modificar;
+            }
+        }
+        productos(valor);
     }
 }
 void loop() {
+    controller.run();
     int distancia_persona = 0;
     static int option_admin = 0;
     int x_menu = analogRead(PIN_VRx);
@@ -450,12 +464,12 @@ void loop() {
     const long interval = 250;  // Ajusta este intervalo según sea necesario
     switch (state) {
     case START:
+
         start();
-        state = SERVICE;
         break;
     case SERVICE:
         distancia_persona = sensor_distancia();
-        if (distancia_persona > 100) {
+        if (distancia_persona > 1000) {  //////////////////////////////cambar a 100
             lcd.print("Fuera de rango");
             delay(200);
             lcd.clear();
@@ -473,14 +487,15 @@ void loop() {
     case ADMIN:
         digitalWrite(PIN_LED, HIGH);
         analogWrite(PIN_LED2, 255);
+
         if ((millis() - previousMillis) > interval) {
             Serial.println("x_ang_menu: " + String(x_ang_menu));
-            if (x_ang_menu > 100) {
+            if (x_ang_menu > 110) {
                 option_admin++;
                 if (option_admin > 3) {
                     option_admin = 0;
                 }
-            } else if (x_ang_menu < 80) {
+            } else if (x_ang_menu < 70) {
                 option_admin--;
                 if (option_admin < 0) {
                     option_admin = 3;
