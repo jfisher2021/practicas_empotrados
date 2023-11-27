@@ -73,7 +73,7 @@ Thread pulsado_boton_thread = Thread();
 
 // DHT dht(DHTPIN, DHTTYPE);
 const long interval = 250;
-int state, tempratura, humedad, x, y, x_ang, y_ang, sw_pulsado;
+int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado;
 int valor = 0;
 float cafe_solo = 1;
 float cafe_cortado = 1.10;
@@ -81,7 +81,7 @@ float cafe_doble = 1.25;
 float cafe_premium = 1.50;
 float chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
-unsigned long previousMillis, previousMillis_precio, time_switch, time_dist, previous_time_coffe;
+unsigned long previousMillis, previousMillis_precio, time_switch, time_dist, previous_time_coffe, temp_hum;
 const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
@@ -178,7 +178,7 @@ bool pulsado_ = false;
 void tiempo_pulsado_boton() {
     Serial.println("Boton:");
     Serial.print(digitalRead(BOTON));
-    
+
     if (digitalRead(BOTON) == LOW) {
         if (buttonPressStartTime == 0) {
             // Si el botón acaba de ser presionado, registra el tiempo actual
@@ -194,7 +194,10 @@ void tiempo_pulsado_boton() {
 
     if (tiempo_pulsado >= 2000 && tiempo_pulsado <= 3000) {
         // Si el botón ha estado presionado durante más de 2 segundos y menos de 3 segundos, cambia al estado SERVICE
+        lcd.print("AAAAAAAAAAAAA");
+        delay(1000);
         state = SERVICE;
+        temp_hum = 0;
     }
     if (tiempo_pulsado > 5000) {
         // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
@@ -266,10 +269,25 @@ void productos(int product) {
 
 void servicio() {
     static int product = 0;
-
     unsigned long currentMillis = millis();
-
-    if (currentMillis - previousMillis >= interval) {
+    if ((millis() - temp_hum) < 5000) {
+        if ((millis() - previousMillis) > interval) {
+            humedad = 0;
+            temperatura = 0;
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.write("Temp: ");
+            lcd.print(temperatura);
+            lcd.print((char)223);
+            lcd.write("C");
+            lcd.setCursor(0, 1);
+            lcd.write("Hum: ");
+            lcd.print(humedad);
+            lcd.write("%");
+            previousMillis = millis();
+        }
+        previousMillis = millis();
+    } else if (currentMillis - previousMillis >= interval) {
         previousMillis = currentMillis;
 
         if (x_ang > 110) {
@@ -478,6 +496,7 @@ void loop() {
                 lcd.setCursor(0, 1);
                 lcd.write("    RANGO     ");
                 previousMillis_ = millis();
+                temp_hum = millis();
             } else {
                 servicio();
             }
