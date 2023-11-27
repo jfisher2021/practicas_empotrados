@@ -66,9 +66,10 @@ public:
 
 ThreadController controller = ThreadController();
 LedThread* parpadeo = new LedThread(PIN_LED);
+Thread joistick_thread = Thread();
 
 // DHT dht(DHTPIN, DHTTYPE);
-int state;
+int state, tempratura, humedad, x, y, x_ang, y_ang;
 int valor = 0;
 float cafe_solo = 1;
 float cafe_cortado = 1.10;
@@ -77,7 +78,7 @@ float cafe_premium = 1.50;
 float chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
 unsigned long previousMillis, previousMillis_precio, time_switch, time_dist, previous_time_coffe;
-const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
+const int rs = 12, en = 11, d4 = 6, d5 = 5, d6= 4, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 void setup() {
@@ -91,6 +92,10 @@ void setup() {
     // dht.begin();                     // Inicializamos el sensor DHT11
     parpadeo->setInterval(1000);  // Establecer el intervalo de ejecución del thread
     controller.add(parpadeo);     // Agregar los threads al controlador
+    joistick_thread.enabled = true;
+    joistick_thread.setInterval(100);
+    joistick_thread.onRun(leer_joistick);
+    controller.add(&joistick_thread);
 
     lcd.begin(16, 2);
     state = START;
@@ -132,6 +137,7 @@ void setup() {
     Serial.println(" *F");
 }
  */
+
 void start() {
     if (parpadeo->num_parpadeos < 6) {
         controller.add(parpadeo);
@@ -142,6 +148,13 @@ void start() {
         lcd.clear();
         state = SERVICE;
     }
+}
+void leer_joistick() {
+    int x = analogRead(PIN_VRx);
+    int y = analogRead(PIN_VRy);
+    int x_ang = map(x, 0, 1023, 0, 180);
+    int y_ang = map(y, 0, 1023, 0, 180);
+    digitalRead(PIN_SW);
 }
 
 int sensor_distancia() {
@@ -348,9 +361,11 @@ void admin(int option_) {
                 break;
             case 2:
                 lcd.setCursor(0, 0);
-                lcd.print("Tiempo ZZ seg");
+                lcd.print("Tiempo de uso:");
                 lcd.setCursor(0, 1);
-                lcd.print("s");
+                lcd.print(millis()/1000);
+                lcd.setCursor(5, 1);
+                lcd.print("segundos");
                 break;
             case 3:
                 state = PRESIO;
