@@ -170,7 +170,6 @@ temperatura_humedad sensor_temperatura_humedad() {
 
     // Comprobamos si ha habido algún error en la lectura
     if (isnan(humedad) || isnan(temperatura)) {
-        Serial.println("Error obteniendo los datos del sensor DHT11");
     }
     return {temperatura, humedad};
 }
@@ -193,23 +192,20 @@ void leer_joistick() {
     x_ang = map(x, 0, 1023, 0, 180);
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
-    // Serial.print("x_ang:");
-    // Serial.print(x_ang);
-    // Serial.print("  ");
-    // Serial.print("y_ang:");
-    // Serial.print(y_ang);
-    // Serial.println();
-    // Serial.print(" SW:");
-    // Serial.print(sw_pulsado);
+    //
+    //
+    //
+    //
+    //
+    //
+    //
+    //
 }
 static unsigned long buttonPressStartTime = 0;
 static unsigned long tiempo_pulsado = 0;
 bool pulsado_ = false;
 
 void tiempo_pulsado_boton() {
-    Serial.println("Boton:");
-    Serial.print(digitalRead(BOTON));
-
     if (digitalRead(BOTON) == LOW) {
         if (buttonPressStartTime == 0) {
             // Si el botón acaba de ser presionado, registra el tiempo actual
@@ -229,7 +225,6 @@ void tiempo_pulsado_boton() {
         previousMillis = millis();
 
         tiempo_pulsado = 0;
-        Serial.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     }
     if (tiempo_pulsado > 5000) {
         // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
@@ -242,9 +237,6 @@ void tiempo_pulsado_boton() {
 
         tiempo_pulsado = 0;
     }
-
-    Serial.print(" Button Press Time: ");
-    Serial.println(tiempo_pulsado);
 }
 int sensor_distancia() {
     long t;          // Tiempo que demora en llegar el eco
@@ -292,10 +284,6 @@ void servicio() {
                 product = 4;
             }
         }
-
-        // Imprimir datos al monitor serie
-        Serial.print(" product");
-        Serial.print(product);
 
         lcd.clear();
         if (sw_pulsado == LOW) {
@@ -350,9 +338,6 @@ void admin(int option_) {
     if (millis() - previousMillis >= interval) {
         previousMillis = millis();
 
-        // Imprimir datos al monitor serie
-        Serial.print(" option");
-        Serial.print(option);
         lcd.clear();
 
         switch (option) {
@@ -392,8 +377,6 @@ void admin(int option_) {
             break;
         }
     }
-
-    // Imprimir datos al monitor serie
 }
 
 void cambiar_precio() {
@@ -404,12 +387,8 @@ void cambiar_precio() {
     static float cambiar_presio = 0;
 
     unsigned long interval = 250;
-    // Imprimir datos al monitor serie
 
     if (millis() - previousMillis_precio >= interval) {
-        Serial.print("atras:");
-        Serial.print(atras);
-        Serial.println();
         if (sw_pulsado == HIGH) {
             FIRST_TIME = false;
         }
@@ -534,7 +513,7 @@ void loop() {
                     time_dist = millis();
                 }
             }
-            Serial.println("option_admin: " + String(option_admin));
+
             if (sw_pulsado == 0) {
                 state = ADMIN_OPTIONS;
             }
@@ -543,8 +522,6 @@ void loop() {
 
         break;
     case ADMIN_OPTIONS:
-
-        Serial.println("option_adminaaaaaaaaaaaaaaaaaaaaaa: " + String(option_admin));
 
         admin(option_admin);
         break;
