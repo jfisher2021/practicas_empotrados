@@ -56,7 +56,7 @@ struct temperatura_humedad {
 // states
 #define START 1
 #define SERVICE 2
-#define WAITING 3
+#define LET_HIM_COOK 3
 #define PRESIO 4
 #define ADMIN 5
 #define ADMIN_OPTIONS 6
@@ -87,7 +87,8 @@ float cafe_doble = 1.25;
 float cafe_premium = 1.50;
 float chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
-unsigned long previousMillis, previousMillis_precio, time_switch, time_dist, previous_time_coffe, temp_hum;
+unsigned long previousMillis, previousMillis_precio, time_switch, listo_pa,
+    time_dist, previous_time_coffe, temp_hum, removeDrinkTime, startTime_coffe;
 const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
@@ -192,14 +193,8 @@ void leer_joistick() {
     x_ang = map(x, 0, 1023, 0, 180);
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
-    //
-    //
-    //
-    //
-    //
-    //
-    //
-    //
+    Serial.println("x: ");
+    Serial.println(x_ang);
 }
 static unsigned long buttonPressStartTime = 0;
 static unsigned long tiempo_pulsado = 0;
@@ -287,7 +282,10 @@ void servicio() {
 
         lcd.clear();
         if (sw_pulsado == LOW) {
-            state = WAITING;
+            state = LET_HIM_COOK;
+            listo_pa = random(4000, 8000);  // 4 a 8 segundos
+            startTime_coffe = millis();
+            previousMillis = millis();
         }
         productos(product);
     }
@@ -295,38 +293,34 @@ void servicio() {
 
 void preparando_cafe() {
     lcd.clear();
-    unsigned long listo_pa = random(4000, 8000);  // 4 a 8 segundos
-    if (millis() - previous_time_coffe >= listo_pa) {
-        previous_time_coffe = millis();
+    static bool preparado = false;
+
+    int analogValue;
+
+    if (millis() - startTime_coffe < listo_pa) {
         lcd.setCursor(0, 0);
         lcd.print("PREPARANDO");
         lcd.setCursor(0, 1);
         lcd.print("CAFE");
-        int analogValue;
-        unsigned long startTime_coffe = millis();
+        int progress = map(millis() - startTime_coffe, 0, listo_pa, 0, 255);
+        analogValue = map(progress, 0, 255, 0, 255);
+        analogWrite(PIN_LED2, analogValue);
+        removeDrinkTime = millis();
+    } else {
+        preparado = true;
+    }
 
-        // Bucle while para simular el progreso de la preparación
-        while (millis() - startTime_coffe <= listo_pa) {
-            int progress = map(millis() - startTime_coffe, 0, listo_pa, 0, 255);
-            analogValue = map(progress, 0, 255, 0, 255);
-            analogWrite(PIN_LED2, analogValue);
+    if (preparado) {
+        if (millis() - removeDrinkTime < 3000) {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("RETIRE BEBIDA");
+        } else {
+            lcd.clear();
+            state = SERVICE;
+            analogWrite(PIN_LED2, LOW);
+            preparado = false;
         }
-
-        // Mostrar "RETIRE BEBIDA" durante 3 segundos
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("RETIRE BEBIDA");
-
-        // Esperar 3 segundos sin bloquear el bucle principal
-        unsigned long removeDrinkTime = millis();
-        while (millis() - removeDrinkTime <= 3000) {
-        }
-
-        lcd.clear();
-
-        // Volver a la funcionalidad inicial de Servicio
-        state = SERVICE;
-        analogWrite(PIN_LED2, LOW);
     }
 }
 void admin(int option_) {
@@ -478,8 +472,11 @@ void loop() {
         }
 
         break;
-    case WAITING:
-        preparando_cafe();
+    case LET_HIM_COOK:
+        if (millis() - previousMillis >= interval) {
+            previousMillis = millis();
+            preparando_cafe();
+        }
         break;
     case PRESIO:
         cambiar_precio();
