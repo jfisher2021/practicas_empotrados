@@ -115,97 +115,6 @@ void setup() {
     state = START;
     lcd.clear();
 }
-
-temperatura_humedad sensor_temperatura_humedad() {
-    // Leemos la humedad relativa
-    humedad = dht.readHumidity();
-    // Leemos la temperatura en grados centígrados (por defecto)
-    temperatura = dht.readTemperature();
-    // Leemos la temperatura en grados Fahreheit
-    float f = dht.readTemperature(true);
-
-    // Comprobamos si ha habido algún error en la lectura
-    if (isnan(humedad) || isnan(temperatura)) {
-        Serial.println("Error obteniendo los datos del sensor DHT11");
-        return;
-    }
-    return {temperatura, humedad};
-}
-
-void start() {
-    if (parpadeo->num_parpadeos < 6) {
-        controller.add(parpadeo);
-        lcd.setCursor(0, 0);
-        lcd.print("CARGANDO...");
-    } else {
-        controller.remove(parpadeo);
-        lcd.clear();
-        state = SERVICE;
-    }
-}
-void leer_joistick() {
-    x = analogRead(PIN_VRx);
-    y = analogRead(PIN_VRy);
-    x_ang = map(x, 0, 1023, 0, 180);
-    y_ang = map(y, 0, 1023, 0, 180);
-    sw_pulsado = digitalRead(PIN_SW);
-    // Serial.print("x_ang:");
-    // Serial.print(x_ang);
-    // Serial.print("  ");
-    // Serial.print("y_ang:");
-    // Serial.print(y_ang);
-    // Serial.println();
-    // Serial.print(" SW:");
-    // Serial.print(sw_pulsado);
-}
-static unsigned long buttonPressStartTime = 0;
-static unsigned long tiempo_pulsado = 0;
-bool pulsado_ = false;
-void tiempo_pulsado_boton() {
-    Serial.println("Boton:");
-    Serial.print(digitalRead(BOTON));
-
-    if (digitalRead(BOTON) == LOW) {
-        if (buttonPressStartTime == 0) {
-            // Si el botón acaba de ser presionado, registra el tiempo actual
-            buttonPressStartTime = millis();
-        }
-    } else {
-        if (buttonPressStartTime > 0) {
-            // Calcula el tiempo pulsado solo si el botón ha sido soltado
-            tiempo_pulsado = millis() - buttonPressStartTime;
-            buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
-        }
-    }
-
-    if (tiempo_pulsado >= 2000 && tiempo_pulsado <= 3000) {
-        // Si el botón ha estado presionado durante más de 2 segundos y menos de 3 segundos, cambia al estado SERVICE
-        state = SERVICE;
-        temp_hum = 0;
-        tiempo_pulsado = 0;
-    }
-    if (tiempo_pulsado > 5000) {
-        // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
-        state = ADMIN;
-        tiempo_pulsado = 0;
-    }
-
-    Serial.print(" Button Press Time: ");
-    Serial.println(tiempo_pulsado);
-}
-int sensor_distancia() {
-    long t;          // Tiempo que demora en llegar el eco
-    long distancia;  // Distancia en centímetros
-
-    digitalWrite(PIN_TRIGGER, HIGH);
-    delayMicroseconds(10);  // Enviamos un pulso de 10us
-    digitalWrite(PIN_TRIGGER, LOW);
-
-    t = pulseIn(PIN_ECHO, HIGH);  // Obtenemos el ancho del pulso
-    distancia = t / 59;           // Escalamos el tiempo a una distancia en cm
-
-    return distancia;
-}
 void productos(int product) {
     switch (product) {
     case 0:
@@ -251,6 +160,104 @@ void productos(int product) {
     default:
         break;
     }
+}
+
+temperatura_humedad sensor_temperatura_humedad() {
+    // Leemos la humedad relativa
+    humedad = dht.readHumidity();
+    // Leemos la temperatura en grados centígrados (por defecto)
+    temperatura = dht.readTemperature();
+
+    // Comprobamos si ha habido algún error en la lectura
+    if (isnan(humedad) || isnan(temperatura)) {
+        Serial.println("Error obteniendo los datos del sensor DHT11");
+    }
+    return {temperatura, humedad};
+}
+
+void start() {
+    if (parpadeo->num_parpadeos < 6) {
+        controller.add(parpadeo);
+        lcd.setCursor(0, 0);
+        lcd.print("CARGANDO...");
+    } else {
+        controller.remove(parpadeo);
+        lcd.clear();
+        state = SERVICE;
+        temp_hum = millis();
+    }
+}
+void leer_joistick() {
+    x = analogRead(PIN_VRx);
+    y = analogRead(PIN_VRy);
+    x_ang = map(x, 0, 1023, 0, 180);
+    y_ang = map(y, 0, 1023, 0, 180);
+    sw_pulsado = digitalRead(PIN_SW);
+    // Serial.print("x_ang:");
+    // Serial.print(x_ang);
+    // Serial.print("  ");
+    // Serial.print("y_ang:");
+    // Serial.print(y_ang);
+    // Serial.println();
+    // Serial.print(" SW:");
+    // Serial.print(sw_pulsado);
+}
+static unsigned long buttonPressStartTime = 0;
+static unsigned long tiempo_pulsado = 0;
+bool pulsado_ = false;
+
+void tiempo_pulsado_boton() {
+    Serial.println("Boton:");
+    Serial.print(digitalRead(BOTON));
+
+    if (digitalRead(BOTON) == LOW) {
+        if (buttonPressStartTime == 0) {
+            // Si el botón acaba de ser presionado, registra el tiempo actual
+            buttonPressStartTime = millis();
+        }
+    } else {
+        if (buttonPressStartTime > 0) {
+            // Calcula el tiempo pulsado solo si el botón ha sido soltado
+            tiempo_pulsado = millis() - buttonPressStartTime;
+            buttonPressStartTime = 0;  // Reinicia el tiempo de inicio
+        }
+    }
+
+    if (tiempo_pulsado >= 2000 && tiempo_pulsado <= 3000) {
+        // Si el botón ha estado presionado durante más de 2 segundos y menos de 3 segundos, cambia al estado SERVICE
+        temp_hum = millis();
+        previousMillis = millis();
+
+        tiempo_pulsado = 0;
+        Serial.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+    }
+    if (tiempo_pulsado > 5000) {
+        // Si el botón ha estado presionado durante más de 5 segundos, cambia al estado ADMIN
+        lcd.clear();
+        digitalWrite(PIN_LED, LOW);
+        analogWrite(PIN_LED2, 0);
+        state = (state == ADMIN) ? SERVICE : ADMIN;
+        temp_hum = millis();
+        previousMillis = millis();
+
+        tiempo_pulsado = 0;
+    }
+
+    Serial.print(" Button Press Time: ");
+    Serial.println(tiempo_pulsado);
+}
+int sensor_distancia() {
+    long t;          // Tiempo que demora en llegar el eco
+    long distancia;  // Distancia en centímetros
+
+    digitalWrite(PIN_TRIGGER, HIGH);
+    delayMicroseconds(10);  // Enviamos un pulso de 10us
+    digitalWrite(PIN_TRIGGER, LOW);
+
+    t = pulseIn(PIN_ECHO, HIGH);  // Obtenemos el ancho del pulso
+    distancia = t / 59;           // Escalamos el tiempo a una distancia en cm
+
+    return distancia;
 }
 
 void servicio() {
@@ -473,6 +480,7 @@ void loop() {
     case START:
 
         start();
+
         break;
     case SERVICE:
 
