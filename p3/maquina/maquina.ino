@@ -113,7 +113,7 @@ void setup() {
     controller.add(&pulsado_boton_thread);
 
     lcd.begin(16, 2);
-    state = START;
+    state = ADMIN;
     lcd.clear();
 }
 void productos(int product) {
@@ -193,8 +193,6 @@ void leer_joistick() {
     x_ang = map(x, 0, 1023, 0, 180);
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
-    Serial.println("x: ");
-    Serial.println(x_ang);
 }
 static unsigned long buttonPressStartTime = 0;
 static unsigned long tiempo_pulsado = 0;
@@ -378,7 +376,7 @@ void cambiar_precio() {
     static int atras = 0;
     static bool FIRST_TIME = true;
     static bool pulsado = false;
-    static float cambiar_presio = 0;
+    float cambiar_presio = 0;
 
     unsigned long interval = 250;
 
@@ -404,6 +402,7 @@ void cambiar_precio() {
                 atras = 0;
                 if (x_ang > 110) {
                     cambiar_presio += 0.05;
+
                 } else if (x_ang < 70) {
                     cambiar_presio -= 0.05;
                 }
