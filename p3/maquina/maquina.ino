@@ -47,11 +47,6 @@ public:
     }
 };
 
-struct temperatura_humedad {
-    int temperatura;
-    int humedad;
-};
-
 // states
 #define START 1
 #define SERVICE 2
@@ -60,31 +55,27 @@ struct temperatura_humedad {
 #define ADMIN 5
 #define ADMIN_OPTIONS 6
 
-#define PIN_VRx A0
-#define PIN_VRy A1
-#define PIN_SW 10
-#define PIN_LED A3
-#define PIN_LED2 9
+#define PIN_VRx A0     // Pin analógico 0 para el eje X del joystick
+#define PIN_VRy A1     // Pin analógico 1 para el eje Y del joystick
+#define PIN_SW 10      // Pin digital 10 para el botón
+#define PIN_LED A3     // Pin analógico 3 para el LED
+#define PIN_LED2 9     // Pin digital 9 para el LED
 #define PIN_TRIGGER 8  // Pin digital 8 para el PIN_TRIGGER del sensor
 #define PIN_ECHO 7     // Pin digital 7 para el PIN_ECHO del sensor
 #define BOTON 13       // Pin digital 10 para el botón
-#define DHTPIN 2       // Pin digital 2 para el sensor
+#define DHTPIN 2       // Pin digital 2 para el sensor DHT11 (temperatura y humedad)
 #define DHTTYPE DHT11  // DHT 11
 
 ThreadController controller = ThreadController();
 LedThread *parpadeo = new LedThread(PIN_LED);
 Thread joistick_thread = Thread();
 Thread pulsado_boton_thread = Thread();
-temperatura_humedad datos_temp_hum;
+Thread temperatura_humedad_thread = Thread();
 DHT dht(DHTPIN, DHTTYPE);
 const long interval = 250;
 int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado;
 int valor = 0;
-float cafe_solo = 1;
-float cafe_cortado = 1.10;
-float cafe_doble = 1.25;
-float cafe_premium = 1.50;
-float chocolate = 2.00;
+float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
 unsigned long previousMillis_, previousMillis, previousMillis_precio, time_switch, listo_pa,
     time_dist, previous_time_coffe, temp_hum, removeDrinkTime, startTime_coffe;
@@ -110,9 +101,13 @@ void setup() {
     pulsado_boton_thread.setInterval(200);
     pulsado_boton_thread.onRun(tiempo_pulsado_boton);
     controller.add(&pulsado_boton_thread);
-    wdt_disable();
-    wdt_enable(WDTO_8S);
-    lcd.begin(16, 2);
+    temperatura_humedad_thread.enabled = true;
+    temperatura_humedad_thread.setInterval(300);
+    temperatura_humedad_thread.onRun(sensor_temperatura_humedad);
+    controller.add(&temperatura_humedad_thread);
+    wdt_disable();        // Deshabilitamos el watchdog timer
+    wdt_enable(WDTO_8S);  // Habilitamos el watchdog timer con un tiempo de espera de 8 segundos
+    lcd.begin(16, 2);     // Inicializamos la pantalla LCD de 16x2
     state = START;
     lcd.clear();
 }
@@ -163,7 +158,7 @@ void productos(int product) {
     }
 }
 
-temperatura_humedad sensor_temperatura_humedad() {
+void sensor_temperatura_humedad() {
     // Leemos la humedad relativa
     humedad = dht.readHumidity();
     // Leemos la temperatura en grados centígrados (por defecto)
@@ -171,8 +166,8 @@ temperatura_humedad sensor_temperatura_humedad() {
 
     // Comprobamos si ha habido algún error en la lectura
     if (isnan(humedad) || isnan(temperatura)) {
+        return;
     }
-    return {temperatura, humedad};
 }
 
 void start() {
@@ -193,7 +188,6 @@ void leer_joistick() {
     x_ang = map(x, 0, 1023, 0, 180);
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
-    Serial.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: ");
 }
 static unsigned long buttonPressStartTime = 0;
 static unsigned long tiempo_pulsado = 0;
@@ -231,7 +225,6 @@ void tiempo_pulsado_boton() {
 
         tiempo_pulsado = 0;
     }
-    Serial.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 }
 int sensor_distancia() {
     long t;          // Tiempo que demora en llegar el eco
@@ -255,12 +248,12 @@ void servicio() {
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.write("Temp: ");
-            lcd.print(datos_temp_hum.temperatura);
+            lcd.print(temperatura);
             lcd.print((char)223);
             lcd.write("C");
             lcd.setCursor(0, 1);
             lcd.write("Hum: ");
-            lcd.print(datos_temp_hum.humedad);
+            lcd.print(humedad);
             lcd.write("%");
             previousMillis = millis();
         }
@@ -343,12 +336,12 @@ void admin(int option_) {
 
             lcd.setCursor(0, 0);
             lcd.write("Temp: ");
-            lcd.print(datos_temp_hum.temperatura);
+            lcd.print(temperatura);
             lcd.print((char)223);
             lcd.write("C");
             lcd.setCursor(0, 1);
             lcd.write("Hum: ");
-            lcd.print(datos_temp_hum.humedad);
+            lcd.print(humedad);
             lcd.write("%");
             break;
         case 1:
@@ -451,7 +444,23 @@ void cambiar_precio() {
     }
 }
 void loop() {
-    datos_temp_hum = sensor_temperatura_humedad();
+    if (state == START) {
+        controller.remove(&joistick_thread);
+        controller.remove(&pulsado_boton_thread);
+        controller.remove(&temperatura_humedad_thread);
+    } else if (state == LET_HIM_COOK) {
+        controller.remove(&joistick_thread);
+        controller.remove(&temperatura_humedad_thread);
+    } else {
+        if ((state == ADMIN_OPTIONS) || (state == SERVICE)) {
+            controller.add(&temperatura_humedad_thread);
+        } else {
+            controller.remove(&temperatura_humedad_thread);
+        }
+        controller.add(&joistick_thread);
+        controller.add(&pulsado_boton_thread);
+    }
+
     controller.run();
     static int option_admin = 0;
     switch (state) {
