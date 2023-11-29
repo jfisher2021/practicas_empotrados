@@ -86,7 +86,7 @@ float cafe_doble = 1.25;
 float cafe_premium = 1.50;
 float chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
-unsigned long previousMillis, previousMillis_precio, time_switch, listo_pa,
+unsigned long previousMillis_, previousMillis, previousMillis_precio, time_switch, listo_pa,
     time_dist, previous_time_coffe, temp_hum, removeDrinkTime, startTime_coffe;
 const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
@@ -113,7 +113,7 @@ void setup() {
     wdt_disable();
     wdt_enable(WDTO_8S);
     lcd.begin(16, 2);
-    state = ADMIN;
+    state = START;
     lcd.clear();
 }
 void productos(int product) {
@@ -215,8 +215,8 @@ void tiempo_pulsado_boton() {
 
     if (tiempo_pulsado >= 2000 && tiempo_pulsado <= 3000) {
         // Si el botón ha estado presionado durante más de 2 segundos y menos de 3 segundos, cambia al estado SERVICE
+        previousMillis_ = millis();
         temp_hum = millis();
-        previousMillis = millis();
 
         tiempo_pulsado = 0;
     }
@@ -227,7 +227,7 @@ void tiempo_pulsado_boton() {
         analogWrite(PIN_LED2, 0);
         state = (state == ADMIN) ? SERVICE : ADMIN;
         temp_hum = millis();
-        previousMillis = millis();
+        previousMillis_ = millis();
 
         tiempo_pulsado = 0;
     }
@@ -265,29 +265,31 @@ void servicio() {
             previousMillis = millis();
         }
         previousMillis = millis();
-    } else if (currentMillis - previousMillis >= interval) {
-        previousMillis = currentMillis;
+    } else {
+        if (currentMillis - previousMillis >= interval) {
+            previousMillis = currentMillis;
 
-        if (x_ang > 110) {
-            product++;
-            if (product > 4) {
-                product = 0;
+            if (x_ang > 110) {
+                product++;
+                if (product > 4) {
+                    product = 0;
+                }
+            } else if (x_ang < 70) {
+                product--;
+                if (product < 0) {
+                    product = 4;
+                }
             }
-        } else if (x_ang < 70) {
-            product--;
-            if (product < 0) {
-                product = 4;
-            }
-        }
 
-        lcd.clear();
-        if (sw_pulsado == LOW) {
-            state = LET_HIM_COOK;
-            listo_pa = random(4000, 8000);  // 4 a 8 segundos
-            startTime_coffe = millis();
-            previousMillis = millis();
+            lcd.clear();
+            if (sw_pulsado == LOW) {
+                state = LET_HIM_COOK;
+                listo_pa = random(4000, 8000);  // 4 a 8 segundos
+                startTime_coffe = millis();
+                previousMillis = millis();
+            }
+            productos(product);
         }
-        productos(product);
     }
 }
 
@@ -322,6 +324,8 @@ void preparando_cafe() {
             preparado = false;
         }
     }
+    temp_hum = millis();
+    previousMillis_ = millis();
 }
 void admin(int option_) {
     int option = option_;
@@ -336,7 +340,7 @@ void admin(int option_) {
 
         switch (option) {
         case 0:
-            
+
             lcd.setCursor(0, 0);
             lcd.write("Temp: ");
             lcd.print(datos_temp_hum.temperatura);
@@ -450,7 +454,6 @@ void loop() {
     datos_temp_hum = sensor_temperatura_humedad();
     controller.run();
     static int option_admin = 0;
-    static unsigned long previousMillis_ = 0;
     switch (state) {
     case START:
 
