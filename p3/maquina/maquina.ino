@@ -73,7 +73,8 @@ Thread pulsado_boton_thread = Thread();
 Thread temperatura_humedad_thread = Thread();
 DHT dht(DHTPIN, DHTTYPE);
 const long interval = 250;
-int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado;
+int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado, nuevo_cafe_solo, nuevo_cafe_cortado, nuevo_cafe_doble,
+    nuevo_cafe_premium, nuevo_chocolate;
 int valor = 0;
 float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
@@ -406,24 +407,35 @@ void cambiar_precio() {
                 } else if (x_ang < 70) {
                     cambiar_presio -= 0.05;
                 }
+
                 switch (valor) {
                 case 0:
-                    cafe_solo = cafe_solo + cambiar_presio;
+                    nuevo_cafe_solo = cambiar_presio + cafe_solo;
                     break;
+
                 case 1:
-                    cafe_cortado = cafe_cortado + cambiar_presio;
+                    nuevo_cafe_cortado = cambiar_presio + cafe_cortado;
                     break;
+
                 case 2:
-                    cafe_doble = cafe_doble + cambiar_presio;
+                    nuevo_cafe_doble = cambiar_presio + cafe_doble;
                     break;
+
                 case 3:
-                    cafe_premium = cafe_premium + cambiar_presio;
+                    nuevo_cafe_premium = cambiar_presio + cafe_premium;
                     break;
+
                 case 4:
-                    chocolate = chocolate + cambiar_presio;
+                    nuevo_chocolate = cambiar_presio + chocolate;
+
                     break;
-                default:
-                    break;
+                }
+                if (sw_pulsado == LOW) {
+                    cafe_solo = nuevo_cafe_solo;
+                    cafe_cortado = nuevo_cafe_cortado;
+                    cafe_doble = nuevo_cafe_doble;
+                    cafe_premium = nuevo_cafe_premium;
+                    chocolate = nuevo_chocolate;
                 }
             } else {
                 if (x_ang > 110) {
@@ -439,8 +451,8 @@ void cambiar_precio() {
                 }
                 valor = producto_modificar;
             }
+            productos(valor);
         }
-        productos(valor);
     }
 }
 void loop() {
