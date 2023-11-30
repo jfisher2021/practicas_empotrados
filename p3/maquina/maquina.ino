@@ -85,7 +85,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 void setup() {
     Serial.begin(9600);  // Iniciamos la comunicación
     pinMode(PIN_LED, OUTPUT);
-    pinMode(PIN_SW, INPUT_PULLUP);
+    pinMode(PIN_SW, INPUT_PULLUP);  // Pin como entrada con resistencia de pull-up 
     pinMode(PIN_TRIGGER, OUTPUT);    // Pin como salida
     pinMode(PIN_ECHO, INPUT);        // Pin como entrada
     digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
@@ -189,9 +189,9 @@ void leer_joistick() {
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
 }
-static unsigned long buttonPressStartTime = 0;
 static unsigned long tiempo_pulsado = 0;
 bool pulsado_ = false;
+static unsigned long buttonPressStartTime = 0;
 
 void tiempo_pulsado_boton() {
     if (digitalRead(BOTON) == LOW) {
@@ -465,9 +465,7 @@ void loop() {
     static int option_admin = 0;
     switch (state) {
     case START:
-
         start();
-
         break;
     case SERVICE:
 
@@ -475,9 +473,9 @@ void loop() {
             if (sensor_distancia() > 2000) {
                 lcd.clear();
                 lcd.setCursor(0, 0);
-                lcd.write("   FUERA DE    ");
+                lcd.write("   ESPERANDO    ");
                 lcd.setCursor(0, 1);
-                lcd.write("    RANGO     ");
+                lcd.write("    CLIENTE     ");
                 previousMillis_ = millis();
                 temp_hum = millis();
             } else {
