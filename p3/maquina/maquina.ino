@@ -73,10 +73,10 @@ Thread pulsado_boton_thread = Thread();
 Thread temperatura_humedad_thread = Thread();
 DHT dht(DHTPIN, DHTTYPE);
 const long interval = 250;
-int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado, nuevo_cafe_solo, nuevo_cafe_cortado, nuevo_cafe_doble,
-    nuevo_cafe_premium, nuevo_chocolate;
+int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado;
 int valor = 0;
-float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00;
+float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00,
+      nuevo_cafe_solo = 1, nuevo_cafe_cortado = 1.10, nuevo_cafe_doble = 1.25, nuevo_cafe_premium = 1.50, nuevo_chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
 unsigned long previousMillis_, previousMillis, previousMillis_precio, time_switch, listo_pa,
     time_dist, previous_time_coffe, temp_hum, removeDrinkTime, startTime_coffe;
@@ -86,7 +86,7 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 void setup() {
     Serial.begin(9600);  // Iniciamos la comunicación
     pinMode(PIN_LED, OUTPUT);
-    pinMode(PIN_SW, INPUT_PULLUP);
+    pinMode(PIN_SW, INPUT_PULLUP);   // Pin como entrada con resistencia de pull-up
     pinMode(PIN_TRIGGER, OUTPUT);    // Pin como salida
     pinMode(PIN_ECHO, INPUT);        // Pin como entrada
     digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
@@ -109,7 +109,7 @@ void setup() {
     wdt_disable();        // Deshabilitamos el watchdog timer
     wdt_enable(WDTO_8S);  // Habilitamos el watchdog timer con un tiempo de espera de 8 segundos
     lcd.begin(16, 2);     // Inicializamos la pantalla LCD de 16x2
-    state = START;
+    state = PRESIO;
     lcd.clear();
 }
 void productos(int product) {
@@ -379,6 +379,7 @@ void cambiar_precio() {
     static int atras = 0;
     static bool FIRST_TIME = true;
     static bool pulsado = false;
+    static bool ONETHER_ONE = false;
     float cambiar_presio = 0;
 
     if (millis() - previousMillis_precio >= interval) {
@@ -410,33 +411,58 @@ void cambiar_precio() {
 
                 switch (valor) {
                 case 0:
-                    nuevo_cafe_solo = cambiar_presio + cafe_solo;
+                    nuevo_cafe_solo = cambiar_presio + nuevo_cafe_solo;
+                    Serial.println(nuevo_cafe_solo);
                     break;
 
                 case 1:
-                    nuevo_cafe_cortado = cambiar_presio + cafe_cortado;
+                    nuevo_cafe_cortado = cambiar_presio + nuevo_cafe_cortado;
                     break;
 
                 case 2:
-                    nuevo_cafe_doble = cambiar_presio + cafe_doble;
+                    nuevo_cafe_doble = cambiar_presio + nuevo_cafe_doble;
                     break;
 
                 case 3:
-                    nuevo_cafe_premium = cambiar_presio + cafe_premium;
+                    nuevo_cafe_premium = cambiar_presio + nuevo_cafe_premium;
                     break;
 
                 case 4:
-                    nuevo_chocolate = cambiar_presio + chocolate;
+                    nuevo_chocolate = cambiar_presio + nuevo_chocolate;
 
                     break;
                 }
-                if (sw_pulsado == LOW) {
-                    cafe_solo = nuevo_cafe_solo;
-                    cafe_cortado = nuevo_cafe_cortado;
-                    cafe_doble = nuevo_cafe_doble;
-                    cafe_premium = nuevo_cafe_premium;
-                    chocolate = nuevo_chocolate;
+                if (sw_pulsado == HIGH) {
+                    Serial.println("aAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+                    ONETHER_ONE = true;
                 }
+                if (ONETHER_ONE) {
+                    if (sw_pulsado == LOW) {
+                        switch (valor) {
+                        case 0:
+                            cafe_solo = nuevo_cafe_solo;
+                            Serial.println("cafe solo");
+                            Serial.println(cafe_solo);
+                            break;
+                        case 1:
+                            cafe_cortado = nuevo_cafe_cortado;
+                            break;
+                        case 2:
+                            cafe_doble = nuevo_cafe_doble;
+                            break;
+                        case 3:
+                            cafe_premium = nuevo_cafe_premium;
+                            break;
+                        case 4:
+                            chocolate = nuevo_chocolate;
+                            break;
+
+                        default:
+                            break;
+                        }
+                    }
+                }
+
             } else {
                 if (x_ang > 110) {
                     producto_modificar++;
@@ -451,8 +477,51 @@ void cambiar_precio() {
                 }
                 valor = producto_modificar;
             }
-            productos(valor);
         }
+    }
+    switch (valor) {
+    case 0:
+        lcd.setCursor(0, 0);
+        lcd.print("cafe solo");
+        lcd.setCursor(0, 1);
+        lcd.print(nuevo_cafe_solo);
+        lcd.setCursor(5, 1);
+        lcd.print("$");
+        break;
+    case 1:
+        lcd.setCursor(0, 0);
+        lcd.print("cafe cortado");
+        lcd.setCursor(0, 1);
+        lcd.print(nuevo_cafe_cortado);
+        lcd.setCursor(5, 1);
+        lcd.print("$");
+        break;
+    case 2:
+        lcd.setCursor(0, 0);
+        lcd.print("cafe doble");
+        lcd.setCursor(0, 1);
+        lcd.print(nuevo_cafe_doble);
+        lcd.setCursor(5, 1);
+        lcd.print("$");
+        break;
+    case 3:
+        lcd.setCursor(0, 0);
+        lcd.print("cafe premium");
+        lcd.setCursor(0, 1);
+        lcd.print(nuevo_cafe_premium);
+        lcd.setCursor(5, 1);
+        lcd.print("$");
+        break;
+    case 4:
+        lcd.setCursor(0, 0);
+        lcd.print("chocolate");
+        lcd.setCursor(0, 1);
+        lcd.print(nuevo_chocolate);
+        lcd.setCursor(5, 1);
+        lcd.print("$");
+        break;
+    default:
+        break;
     }
 }
 void loop() {
@@ -487,9 +556,9 @@ void loop() {
             if (sensor_distancia() > 2000) {
                 lcd.clear();
                 lcd.setCursor(0, 0);
-                lcd.write("   FUERA DE    ");
+                lcd.write("   ESPPERANDO    ");
                 lcd.setCursor(0, 1);
-                lcd.write("    RANGO     ");
+                lcd.write("    CLIENTE     ");
                 previousMillis_ = millis();
                 temp_hum = millis();
             } else {
