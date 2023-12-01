@@ -47,7 +47,20 @@ Bibliotecas utilizadas:
 
 Upload the code provided in this repository to the Arduino board.
 
-## BLOG (USAGE)
+## BLOG 
+Blog: Arduino Project - Button Timer, Threads, and Watchdog
+In this Arduino project, we will explore some advanced techniques to enhance the functionality and reliability of our code. We will cover topics such as button timers, threads, and implementing a watchdog timer.
+
+Button Timer
+One of the key features of this project is the implementation of a button timer. The tiempo_pulsado_boton function monitors the duration of a button press and performs different actions based on the press duration. For example, if the button is pressed for more than 2 seconds but less than or equal to 3 seconds, it transitions to the SERVICE state. If the button is pressed for more than 5 seconds, it toggles between the ADMIN and SERVICE states. This functionality adds versatility to our Arduino project.
+
+Threads of Buttons and Joystick
+To handle multiple inputs simultaneously, we utilize threads. We create an instance of ThreadController called controller to manage the threads. Additionally, we define a LedThread object called parpadeo to handle the blinking of an LED. We add the joystick thread and the button thread to the controller, enabling us to process input from both sources concurrently. This allows for a more interactive and responsive user experience.
+
+Watchdog Timer
+To ensure the reliability of our Arduino board, we implement a watchdog timer. The watchdog timer is a hardware timer that automatically resets the microcontroller if the main program fails to reset it within a specified time period. In our code, we set the watchdog timer to 8 seconds. By periodically resetting the watchdog timer in the loop function, we prevent the system from hanging and ensure the continuous operation of our Arduino project.
+
+## CODE
 
 At first I started playing with a led and the lcd display to see how they worked. I had to visit the Arduino page to learn how to conect the pins. Once I learned to dispaly the information on the lcd display I started to work with the joystick. I had to learn how to read the values of the joystick and how to use them to move the cursor on the lcd display. I had to use de analog Pins to read the values of the joystick so instead of using the digitalWrite() function I had to use the analogRead() function. The map() function in Arduino is used to re-map a number from one range to another. In my case i use it to convert the 1024 values of the joystick to the 180 degrees of the servo motor.
 
@@ -371,3 +384,5 @@ void loop() {
     wdt_reset();
 }
 ```
+
+
