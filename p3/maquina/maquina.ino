@@ -1,3 +1,11 @@
+/***
+ * @AUTHOR jfisher2021
+ * @version 3.3
+ * @date 2021-05-31
+ * @brief Maquina de cafe
+ * @details Maquina de cafe con 5 productos, 1 joystick, 1 boton, 2 leds, 1 sensor de distancia, 1 sensor de temperatura y humedad
+ */
+
 // include the library code:
 #include <DHT.h>
 #include <LiquidCrystal.h>
@@ -47,13 +55,17 @@ public:
     }
 };
 
-// states
-#define START 1
-#define SERVICE 2
-#define LET_HIM_COOK 3
-#define PRESIO 4
-#define ADMIN 5
-#define ADMIN_OPTIONS 6
+// --------------------------------- STATES ---------------------------------
+enum State {
+    START,
+    SERVICE,
+    LET_HIM_COOK,
+    PRESIO,
+    ADMIN,
+    ADMIN_OPTIONS
+};
+
+// ----------------------------- VARIABLES GLOBALES CONSTNTES -----------------------------
 
 #define PIN_VRx A0     // Pin analógico 0 para el eje X del joystick
 #define PIN_VRy A1     // Pin analógico 1 para el eje Y del joystick
@@ -66,38 +78,40 @@ public:
 #define DHTPIN 2       // Pin digital 2 para el sensor DHT11 (temperatura y humedad)
 #define DHTTYPE DHT11  // DHT 11
 
+DHT dht(DHTPIN, DHTTYPE);
+const long interval = 250;
+const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+// ----------------------------- THREADS -----------------------------
 ThreadController controller = ThreadController();
 LedThread *parpadeo = new LedThread(PIN_LED);
 Thread joistick_thread = Thread();
 Thread pulsado_boton_thread = Thread();
 Thread temperatura_humedad_thread = Thread();
-DHT dht(DHTPIN, DHTTYPE);
-const long interval = 250;
-int state, temperatura, humedad, x, y, x_ang, y_ang, sw_pulsado;
-int valor = 0;
-float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00,
-      nuevo_cafe_solo = 1, nuevo_cafe_cortado = 1.10, nuevo_cafe_doble = 1.25, nuevo_cafe_premium = 1.50, nuevo_chocolate = 2.00;
+
+// ----------------------------- VARIABLES GLOBALES -----------------------------
+int state, temperatura, humedad, x_ang, y_ang, sw_pulsado, valor = 0;
+float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50, chocolate = 2.00;
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
-unsigned long previousMillis_, previousMillis, previousMillis_precio, time_switch, listo_pa,
-    time_dist, previous_time_coffe, temp_hum, removeDrinkTime, startTime_coffe;
-const int rs = 12, en = 11, d4 = 6, d5 = 5, d6 = 4, d7 = 3;
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+unsigned long previousMillis_, previousMillis, listo_pa, temp_hum, startTime_coffe;
 
 void setup() {
-    Serial.begin(9600);  // Iniciamos la comunicación
+    // Iniciamos la comunicación serial
+    Serial.begin(9600);
+
+    // Inicializamos los pines
     pinMode(PIN_LED, OUTPUT);
-<<<<<<< HEAD
     pinMode(PIN_SW, INPUT_PULLUP);   // Pin como entrada con resistencia de pull-up
-=======
-    pinMode(PIN_SW, INPUT_PULLUP);  // Pin como entrada con resistencia de pull-up 
->>>>>>> refs/remotes/origin/main
     pinMode(PIN_TRIGGER, OUTPUT);    // Pin como salida
     pinMode(PIN_ECHO, INPUT);        // Pin como entrada
     digitalWrite(PIN_TRIGGER, LOW);  // Inicializamos el pin con 0
     pinMode(BOTON, INPUT_PULLUP);    // Pin como entrada
     dht.begin();                     // Inicializamos el sensor DHT11
-    parpadeo->setInterval(1000);     // Establecer el intervalo de ejecución del thread
-    controller.add(parpadeo);        // Agregar los threads al controlador
+
+    // Inicializamos los threads
+    parpadeo->setInterval(1000);  // Establecer el intervalo de ejecución del thread
+    controller.add(parpadeo);     // Agregar los threads al controlador
     joistick_thread.enabled = true;
     joistick_thread.setInterval(100);
     joistick_thread.onRun(leer_joistick);
@@ -110,10 +124,14 @@ void setup() {
     temperatura_humedad_thread.setInterval(300);
     temperatura_humedad_thread.onRun(sensor_temperatura_humedad);
     controller.add(&temperatura_humedad_thread);
+
+    // Inicializamos el watchdog timer
     wdt_disable();        // Deshabilitamos el watchdog timer
     wdt_enable(WDTO_8S);  // Habilitamos el watchdog timer con un tiempo de espera de 8 segundos
-    lcd.begin(16, 2);     // Inicializamos la pantalla LCD de 16x2
-    state = PRESIO;
+
+    // Inicializamos la pantalla LCD de 16x2
+    lcd.begin(16, 2);
+    state = START;
     lcd.clear();
 }
 void productos(int product) {
@@ -188,17 +206,17 @@ void start() {
     }
 }
 void leer_joistick() {
+    int x, y;
     x = analogRead(PIN_VRx);
     y = analogRead(PIN_VRy);
     x_ang = map(x, 0, 1023, 0, 180);
     y_ang = map(y, 0, 1023, 0, 180);
     sw_pulsado = digitalRead(PIN_SW);
 }
-static unsigned long tiempo_pulsado = 0;
-bool pulsado_ = false;
-static unsigned long buttonPressStartTime = 0;
 
 void tiempo_pulsado_boton() {
+    static unsigned long buttonPressStartTime = 0;
+    static unsigned long tiempo_pulsado = 0;
     if (digitalRead(BOTON) == LOW) {
         if (buttonPressStartTime == 0) {
             // Si el botón acaba de ser presionado, registra el tiempo actual
@@ -292,6 +310,7 @@ void servicio() {
 }
 
 void preparando_cafe() {
+    static unsigned long removeDrinkTime = 0;
     lcd.clear();
     static bool preparado = false;
 
@@ -379,11 +398,10 @@ void admin(int option_) {
 }
 
 void cambiar_precio() {
-    static int producto_modificar = 0;
-    static int atras = 0;
-    static bool FIRST_TIME = true;
-    static bool pulsado = false;
-    static bool ONETHER_ONE = false;
+    static unsigned long previousMillis_precio = 0;
+    static int atras = 0, producto_modificar = 0;
+    static float nuevo_cafe_solo = 1, nuevo_cafe_cortado = 1.10, nuevo_cafe_doble = 1.25, nuevo_cafe_premium = 1.50, nuevo_chocolate = 2.00;
+    static bool pulsado = false, ONETHER_ONE = false, FIRST_TIME = true;
     float cambiar_presio = 0;
 
     if (millis() - previousMillis_precio >= interval) {
@@ -416,7 +434,6 @@ void cambiar_precio() {
                 switch (valor) {
                 case 0:
                     nuevo_cafe_solo = cambiar_presio + nuevo_cafe_solo;
-                    Serial.println(nuevo_cafe_solo);
                     break;
 
                 case 1:
@@ -437,7 +454,6 @@ void cambiar_precio() {
                     break;
                 }
                 if (sw_pulsado == HIGH) {
-                    Serial.println("aAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
                     ONETHER_ONE = true;
                 }
                 if (ONETHER_ONE) {
@@ -445,8 +461,7 @@ void cambiar_precio() {
                         switch (valor) {
                         case 0:
                             cafe_solo = nuevo_cafe_solo;
-                            Serial.println("cafe solo");
-                            Serial.println(cafe_solo);
+
                             break;
                         case 1:
                             cafe_cortado = nuevo_cafe_cortado;
@@ -529,6 +544,7 @@ void cambiar_precio() {
     }
 }
 void loop() {
+    static unsigned long time_dist = 0;
     if (state == START) {
         controller.remove(&joistick_thread);
         controller.remove(&pulsado_boton_thread);
@@ -555,7 +571,7 @@ void loop() {
     case SERVICE:
 
         if ((millis() - previousMillis_) > interval) {
-            if (sensor_distancia() > 2000) {
+            if (sensor_distancia() > 100) {
                 lcd.clear();
                 lcd.setCursor(0, 0);
                 lcd.write("   ESPERANDO    ");
