@@ -25,6 +25,12 @@ Today we are going to see how to make a vending machine with Arduino. This proje
 
 I hope you enjoy it and maybe you can do it yourself at home ;). 
 
+Here is the fritzing diagram of the project in case you want to do it yourself.
+
+you can download the fritzing file here:
+
+[fritzing maquina expendedora ](maquina_expendedora.fzz)
+
 ![Alt text](image-1.png)
 
 ## Components
