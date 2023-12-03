@@ -3,43 +3,56 @@
 This project is a coffee machine simulation implemented using an Arduino board and various sensors and actuators. The coffee machine allows users to select different types of coffee, adjust the price of each coffee, and provides an administration mode for monitoring temperature, humidity, and distance using an LCD display.
 
 
-
 https://github.com/jfisher2021/practicas_empotrados/assets/113594937/2e179a7b-7ba2-4725-b177-0df30b2b1448
-
 
 
 ## Table of Contents
 
-Components
-Installation
-Usage
-Contributing
-License
+● BLOG
+
+● Components
+
+● Installation
+
+● Usage
+
+● CODE
+
+
+## BLOG 
+
+Today we are going to see how to make a vending machine with Arduino. This project is a coffee machine simulation implemented using an Arduino board and various sensors and actuators. The coffee machine allows users to select different types of coffee, adjust the price of each coffee, and provides an administration mode for monitoring temperature, humidity, and distance using an LCD display. Let me show you how I did it. It was a bit difficult but I learned a lot and i had fun doing it. 
+
+I hope you enjoy it and maybe you can do it yourself at home ;). 
+
+![Alt text](image-1.png)
 
 ## Components
 
 The following components are used in this project:
 
-● Arduino UNO
+● Arduino UNO 🚀
 
-● LCD
+● LCD 🖥️
 
-● Joystick
+● Joystick 🕹️
 
-● Sensor temperatura/Humedad DHT11
+● Sensor temperatura/Humedad (DHT11) 🌡️
 
-● Sensor Ultrasonido
+● Sensor Ultrasonido 📏
 
-● Boton
+● Boton 🎮
 
-● 2 LEDS Normales (LED1, LED2)
+● 2 LEDS Normales (LED1, LED2) 💡
+
 
 ## Installation
 
 To set up the coffee machine project, follow these steps:
 
 Connect the Arduino board to your computer.
-Bibliotecas utilizadas:
+
+Libraries Used:
 
 ● LiquidCrystal: https://www.arduino.cc/en/Reference/LiquidCrystal
 
@@ -53,18 +66,7 @@ Bibliotecas utilizadas:
 
 Upload the code provided in this repository to the Arduino board.
 
-## BLOG 
-Blog: Arduino Project - Button Timer, Threads, and Watchdog
-In this Arduino project, we will explore some advanced techniques to enhance the functionality and reliability of our code. We will cover topics such as button timers, threads, and implementing a watchdog timer.
 
-Button Timer
-One of the key features of this project is the implementation of a button timer. The tiempo_pulsado_boton function monitors the duration of a button press and performs different actions based on the press duration. For example, if the button is pressed for more than 2 seconds but less than or equal to 3 seconds, it transitions to the SERVICE state. If the button is pressed for more than 5 seconds, it toggles between the ADMIN and SERVICE states. This functionality adds versatility to our Arduino project.
-
-Threads of Buttons and Joystick
-To handle multiple inputs simultaneously, we utilize threads. We create an instance of ThreadController called controller to manage the threads. Additionally, we define a LedThread object called parpadeo to handle the blinking of an LED. We add the joystick thread and the button thread to the controller, enabling us to process input from both sources concurrently. This allows for a more interactive and responsive user experience.
-
-Watchdog Timer
-To ensure the reliability of our Arduino board, we implement a watchdog timer. The watchdog timer is a hardware timer that automatically resets the microcontroller if the main program fails to reset it within a specified time period. In our code, we set the watchdog timer to 8 seconds. By periodically resetting the watchdog timer in the loop function, we prevent the system from hanging and ensure the continuous operation of our Arduino project.
 
 ## CODE
 
@@ -302,7 +304,7 @@ if (ONETHER_ONE) {
     }
 }
 ```
-##### 5. 5 seconds timer Button
+##### 5. Count Button Press Duration
 
 The tiempo_pulsado_boton function monitors the duration of a button press and performs the following actions based on the press duration:
 
