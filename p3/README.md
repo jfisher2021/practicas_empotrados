@@ -2,6 +2,12 @@
 
 This project is a coffee machine simulation implemented using an Arduino board and various sensors and actuators. The coffee machine allows users to select different types of coffee, adjust the price of each coffee, and provides an administration mode for monitoring temperature, humidity, and distance using an LCD display.
 
+
+
+https://github.com/jfisher2021/practicas_empotrados/assets/113594937/2e179a7b-7ba2-4725-b177-0df30b2b1448
+
+
+
 ## Table of Contents
 
 Components
