@@ -96,6 +96,7 @@ float cafe_solo = 1, cafe_cortado = 1.10, cafe_doble = 1.25, cafe_premium = 1.50
 String menu_admin[] = {"Ver temperatura", "Ver distancia sensor", "Ver contador", "Modificar precio"};
 unsigned long previousMillis_, previousMillis, listo_pa, temp_hum, startTime_coffe;
 
+// ****************************** SETUP ******************************
 void setup() {
     // Iniciamos la comunicación serial
     Serial.begin(9600);
@@ -134,6 +135,10 @@ void setup() {
     state = START;
     lcd.clear();
 }
+
+//********************************** FUNCIONES**********************************
+
+// ----------------------------- MOSTRAR PRODUCTOS -----------------------------
 void productos(int product) {
     switch (product) {
     case 0:
@@ -181,6 +186,7 @@ void productos(int product) {
     }
 }
 
+// ----------------------------- SENSOR TEMPERATURA Y HUMEDAD -----------------------------
 void sensor_temperatura_humedad() {
     // Leemos la humedad relativa
     humedad = dht.readHumidity();
@@ -193,6 +199,7 @@ void sensor_temperatura_humedad() {
     }
 }
 
+// ----------------------------- ESTADOS -----------------------------
 void start() {
     if (parpadeo->num_parpadeos < 6) {
         controller.add(parpadeo);
@@ -214,6 +221,7 @@ void leer_joistick() {
     sw_pulsado = digitalRead(PIN_SW);
 }
 
+// ----------------------------- TIEMPO PULSADO BOTON -----------------------------
 void tiempo_pulsado_boton() {
     static unsigned long buttonPressStartTime = 0;
     static unsigned long tiempo_pulsado = 0;
@@ -249,6 +257,8 @@ void tiempo_pulsado_boton() {
         tiempo_pulsado = 0;
     }
 }
+
+// ----------------------------- DISTANCIA -----------------------------
 int sensor_distancia() {
     long t;          // Tiempo que demora en llegar el eco
     long distancia;  // Distancia en centímetros
@@ -263,6 +273,9 @@ int sensor_distancia() {
     return distancia;
 }
 
+// ****************************** ESTADOS ******************************
+
+// ----------------------------- SERVICIO -----------------------------
 void servicio() {
     static int product = 0;
     unsigned long currentMillis = millis();
@@ -309,6 +322,7 @@ void servicio() {
     }
 }
 
+// ----------------------------- PREPARANDO CAFE -----------------------------
 void preparando_cafe() {
     static unsigned long removeDrinkTime = 0;
     lcd.clear();
@@ -344,6 +358,8 @@ void preparando_cafe() {
     temp_hum = millis();
     previousMillis_ = millis();
 }
+
+// ----------------------------- ADMIN -----------------------------
 void admin(int option_) {
     int option = option_;
 
@@ -397,6 +413,7 @@ void admin(int option_) {
     }
 }
 
+// ----------------------------- CAMBIAR PRECIO -----------------------------
 void cambiar_precio() {
     static unsigned long previousMillis_precio = 0;
     static int atras = 0, producto_modificar = 0;
@@ -543,6 +560,8 @@ void cambiar_precio() {
         break;
     }
 }
+
+// ****************************** LOOP ******************************
 void loop() {
     static unsigned long time_dist = 0;
     if (state == START) {
